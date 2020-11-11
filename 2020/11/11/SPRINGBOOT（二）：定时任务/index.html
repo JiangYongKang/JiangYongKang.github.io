@@ -20,24 +20,20 @@
     var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="前两年做过一些微信公众号相关的开发。最近这两年自从微信小程序问世之后，公众号开发慢慢的淡出了视野。这段时间做了一个活动页，用到了微信网页授权登录的相关接口，坑点还是蛮多的，正好整理总结一下如何通过微信网页授权获取用户的基本信息。">
+  <meta name="description" content="在开发过程中，很多需求都需要定时任务才能完成。SpringBoot 提供了简单快捷的实现方式，我们只需要添加一些注解就可以使用。那么什么场景下需要使用到定时任务呢？例如：整点发放优惠券，每天自动更新收益，定时生成统计报表等等。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="微信网页授权登录实践总结">
-<meta property="og:url" content="https://blog.jiangyongkang.com/2019/08/01/%E5%BE%AE%E4%BF%A1%E7%BD%91%E9%A1%B5%E6%8E%88%E6%9D%83%E7%99%BB%E5%BD%95%E5%AE%9E%E8%B7%B5%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:title" content="SpringBoot（二）：定时任务">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2020/11/11/SPRINGBOOT%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/index.html">
 <meta property="og:site_name" content="姜咏康的博客">
-<meta property="og:description" content="前两年做过一些微信公众号相关的开发。最近这两年自从微信小程序问世之后，公众号开发慢慢的淡出了视野。这段时间做了一个活动页，用到了微信网页授权登录的相关接口，坑点还是蛮多的，正好整理总结一下如何通过微信网页授权获取用户的基本信息。">
+<meta property="og:description" content="在开发过程中，很多需求都需要定时任务才能完成。SpringBoot 提供了简单快捷的实现方式，我们只需要添加一些注解就可以使用。那么什么场景下需要使用到定时任务呢？例如：整点发放优惠券，每天自动更新收益，定时生成统计报表等等。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://cdn.jiangyongkang.com/blog/16c70abf02869c61.jpg">
-<meta property="og:image" content="http://cdn.jiangyongkang.com/blog/16c70ac36633a6da.jpg">
-<meta property="og:image" content="http://cdn.jiangyongkang.com/blog/16c70ac185139c3e.jpg">
-<meta property="article:published_time" content="2019-08-01T06:22:19.000Z">
-<meta property="article:modified_time" content="2020-11-10T02:11:23.021Z">
+<meta property="article:published_time" content="2020-11-11T11:55:28.000Z">
+<meta property="article:modified_time" content="2020-11-11T11:56:16.412Z">
 <meta property="article:author" content="JiangYongKang">
-<meta property="article:tag" content="微信">
+<meta property="article:tag" content="SpringBoot">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://cdn.jiangyongkang.com/blog/16c70abf02869c61.jpg">
 
-<link rel="canonical" href="https://blog.jiangyongkang.com/2019/08/01/%E5%BE%AE%E4%BF%A1%E7%BD%91%E9%A1%B5%E6%8E%88%E6%9D%83%E7%99%BB%E5%BD%95%E5%AE%9E%E8%B7%B5%E6%80%BB%E7%BB%93/">
+<link rel="canonical" href="https://blog.jiangyongkang.com/2020/11/11/SPRINGBOOT%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/">
 
 
 <script id="page-configurations">
@@ -50,7 +46,7 @@
   };
 </script>
 
-  <title>微信网页授权登录实践总结 | 姜咏康的博客</title>
+  <title>SpringBoot（二）：定时任务 | 姜咏康的博客</title>
   
 
 
@@ -172,7 +168,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2019/08/01/%E5%BE%AE%E4%BF%A1%E7%BD%91%E9%A1%B5%E6%8E%88%E6%9D%83%E7%99%BB%E5%BD%95%E5%AE%9E%E8%B7%B5%E6%80%BB%E7%BB%93/">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2020/11/11/SPRINGBOOT%EF%BC%88%E4%BA%8C%EF%BC%89%EF%BC%9A%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
@@ -185,7 +181,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          微信网页授权登录实践总结
+          SpringBoot（二）：定时任务
         </h1>
 
         <div class="post-meta">
@@ -194,23 +190,17 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2019-08-01 14:22:19" itemprop="dateCreated datePublished" datetime="2019-08-01T14:22:19+08:00">2019-08-01</time>
+              <time title="创建时间：2020-11-11 19:55:28 / 修改时间：19:56:16" itemprop="dateCreated datePublished" datetime="2020-11-11T19:55:28+08:00">2020-11-11</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-10 10:11:23" itemprop="dateModified" datetime="2020-11-10T10:11:23+08:00">2020-11-10</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/OAUTH2-0/" itemprop="url" rel="index"><span itemprop="name">OAuth2.0</span></a>
+                  <a href="/categories/SPRINGBOOT-%E7%B3%BB%E5%88%97/" itemprop="url" rel="index"><span itemprop="name">SpringBoot 系列</span></a>
                 </span>
             </span>
 
@@ -225,22 +215,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前两年做过一些微信公众号相关的开发。最近这两年自从微信小程序问世之后，公众号开发慢慢的淡出了视野。这段时间做了一个活动页，用到了微信网页授权登录的相关接口，坑点还是蛮多的，正好整理总结一下如何通过微信网页授权获取用户的基本信息。</p>
+        <p>在开发过程中，很多需求都需要定时任务才能完成。SpringBoot 提供了简单快捷的实现方式，我们只需要添加一些注解就可以使用。那么什么场景下需要使用到定时任务呢？例如：整点发放优惠券，每天自动更新收益，定时生成统计报表等等。</p>
 <a id="more"></a>
 
-<h3 id="注册微信公众平台-测试号"><a href="#注册微信公众平台-测试号" class="headerlink" title="注册微信公众平台/测试号"></a>注册微信公众平台/测试号</h3><p>首先我们需要注册登录微信公众平台，如果手头上没有微信公众号可以试试 <a href="https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login" target="_blank" rel="noopener">微信公众平台接口测试帐号</a>。接口测试号具备公众平台的全部接口的。正式账户拥有的所有高级功能，在测试号中也是全部都有的，这点不用担心。</p>
-<h3 id="配置微信公众平台-测试号"><a href="#配置微信公众平台-测试号" class="headerlink" title="配置微信公众平台/测试号"></a>配置微信公众平台/测试号</h3><p>如果是做微信网页授权登录，需要配置两个域名回调。第一个是 <strong>JS接口安全域名</strong> 第二个是 <strong>授权回调页面域名</strong>。这两个域名都必须是公网上可以访问的域名地址，并且不可以加端口号。比如我的域名是 <a href="https://wwww.baidu.com" target="_blank" rel="noopener">https://wwww.baidu.com</a> ，那么需要在这两个地方填入 <a href="http://www.baidu.com" target="_blank" rel="noopener">www.baidu.com</a> 。协议头 <code>http://</code> <code>https://</code> 不要填进去。</p>
-<h3 id="获取用户授权"><a href="#获取用户授权" class="headerlink" title="获取用户授权"></a>获取用户授权</h3><p>用户在访问前端页面时，前端需要发起一个请求 <code>https://open.weixin.qq.com/connect/oauth2/authorize?appid=你的APPID&amp;redirect_uri=用户确认授权之后重定向的页面&amp;response_type=code&amp;scope=SCOPE&amp;state=一些自定义参数#wechat_redirect</code>。<br>用户同意授权之后微信会做一次重定向，重定向的地址就是我们填写的 <code>redirect_uri</code>。同时会带上一个 <code>code</code> 参数，比如：<code>https://www.xxx.com/login?code=001jPCah2IHlBB0vBGah2Tcwah2jPCad</code></p>
-<div style="text-align: center;">
-  <img src='http://cdn.jiangyongkang.com/blog/16c70abf02869c61.jpg' />
-    <img src='http://cdn.jiangyongkang.com/blog/16c70ac36633a6da.jpg' />
-  <img src='http://cdn.jiangyongkang.com/blog/16c70ac185139c3e.jpg' />
-</div>
+<h3 id="启用定时任务"><a href="#启用定时任务" class="headerlink" title="启用定时任务"></a>启用定时任务</h3><p>通过在启动类上添加 <code>@EnableScheduling</code> 注解即可启动定时任务。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@EnableScheduling</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpringBootScheduling</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(SpringBootScheduling<span class="class">.<span class="keyword">class</span>, <span class="title">args</span>)</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<h3 id="服务端获取授权数据"><a href="#服务端获取授权数据" class="headerlink" title="服务端获取授权数据"></a>服务端获取授权数据</h3><p>前端在重定向之后通过 <code>window.location.search</code> 获取到 URL 中的 <code>code</code> 参数并且将 <code>code</code> 的值发送给后端。需要注意的是 <code>code</code> 是一次性的，仅能使用一次。后端接拿到 <code>code</code> 之后发送请求去交换用户的 <code>access token</code> 注意这里的 <code>access token</code> 不是微信公众号的 <code>access token</code>。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> curl https://api.weixin.qq.com/sns/oauth2/access_token?grant_type=authorization_code?appid=你的APPID&amp;secret=你的SECRET</span></span><br><span class="line">&#123;</span><br><span class="line">  "access_token": "24_C_G4z0dJmKmdr_aXy-YnBNOSRBEMZzgSi8eDQ203McjmAbnBuhkq1Y-EI_rFIiYU-GMRM-lHDeIdDTCBZVed4VstZJsXaVoWbV0pwMsz0ZE",</span><br><span class="line">  "expires_in": 7200,</span><br><span class="line">  "refresh_token": "24_FXWHriQzFUzQ7IsJXNgCEycLJEex_m4EwLODafl54Awzm368bcn8c3IP0z9BOVCMqzyr8BK3GdELm0IGmPleqieQc0eKzQQyhIG5UJ1rMvA",</span><br><span class="line">  "openid": "oHelauDl2s4jED3RdkWgAKNkp8g8",</span><br><span class="line">  "scope": "snsapi_userinfo"</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过获取到的 <code>access token</code> 去获取用户的信息</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">https://api.weixin.qq.com/sns/userinfo?lang=zh_CN\</span><br><span class="line">	&amp;access_token=24_C_G4z0dJmKmdr_aXy-YnBNOSRBEMZzgSi8eDQ203McjmAbnBuhkq1Y-EI_rFIiYU-GMRM-lHDeIdDTCBZVed4VstZJsXaVoWbV0pwMsz0ZE\</span><br><span class="line">	&amp;openid=oHelauDl2s4jED3RdkWgAKNkp8g8</span><br><span class="line">&#123;</span><br><span class="line">  "openid": "oHelauDl2s4jED3RdkWxxKNkp8g8",</span><br><span class="line">  "nickname": "xxx",</span><br><span class="line">  "sex": 1,</span><br><span class="line">  "language": "zh_CN",</span><br><span class="line">  "city": "浦东新区",</span><br><span class="line">  "province": "上海",</span><br><span class="line">  "country": "中国",</span><br><span class="line">  "headimgurl": "http://thirdwx.qlogo.cn/mmopen/vi_32/ucdjsK0uwmb55dIB27H9FcSh6icHvXBVVH0jyvTALlFI2WXHtFic2MOb7jE5C70KibWZ9WicsGNqsmFTkFbaaKoI9Q/132",</span><br><span class="line">  "privilege": [</span><br><span class="line"></span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="设置定时任务"><a href="#设置定时任务" class="headerlink" title="设置定时任务"></a>设置定时任务</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduledTasks</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(ScheduledTasks<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Scheduled</span>(fixedRate = <span class="number">1000</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">taskOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        logger.info(<span class="string">"--&gt; task one"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Scheduled</span>(fixedDelay = <span class="number">1000</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">taskTwo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        logger.info(<span class="string">"--&gt; task two"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Scheduled</span>(initialDelay = <span class="number">1000</span>, fixedDelay = <span class="number">1000</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">taskThree</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        logger.info(<span class="string">"--&gt; task three"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Scheduled</span>(cron = <span class="string">"* * * * * *"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">taskFour</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        logger.info(<span class="string">"--&gt; task four"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>@Scheduled</code> 可以设置两种类型的定时任务，一种是 <code>fixedRate</code> 的固定值间隔的定时任务，另一种是基于 <code>cron</code> 表达式的定时任务。<code>cron</code> 直接传表达式就可以了。固定值分以下几种：</p>
+<ul>
+<li><code>@Scheduled(fixedRate = 1000)</code> 上一次开始执行时间点之后一秒再执行</li>
+<li><code>@Scheduled(fixedDelay = 1000)</code> 上一次执行完毕时间点之后一秒再执行</li>
+<li><code>@Scheduled(initialDelay = 1000, fixedRate = 1000)</code> ：第一次延迟一秒后执行，之后按 <code>fixedRate</code> 的规则每秒执行一次</li>
+</ul>
 
     </div>
 
@@ -250,7 +238,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/%E5%BE%AE%E4%BF%A1/" rel="tag"># 微信</a>
+              <a href="/tags/SPRINGBOOT/" rel="tag"># SpringBoot</a>
           </div>
 
         
@@ -259,13 +247,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2019/07/30/Rails-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E7%94%9F%E6%88%90%E6%9D%A1%E5%BD%A2%E7%A0%81%E5%92%8C%E4%BA%8C%E7%BB%B4%E7%A0%81/" rel="prev" title="Rails 服务端生成条形码和二维码">
-      <i class="fa fa-chevron-left"></i> Rails 服务端生成条形码和二维码
+    <a href="/2020/11/11/SPRINGBOOT%EF%BC%88%E4%B8%80%EF%BC%89%EF%BC%9A%E5%85%A5%E9%97%A8%E4%BD%93%E9%AA%8C/" rel="prev" title="SpringBoot（一）：入门体验">
+      <i class="fa fa-chevron-left"></i> SpringBoot（一）：入门体验
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2019/08/29/MySQL%20LBS%20%E5%AE%9E%E7%8E%B0%E6%9F%A5%E6%89%BE%E9%99%84%E8%BF%91%E7%9A%84%E4%BA%BA/" rel="next" title="MySQL LBS 实现查找附近的人">
-      MySQL LBS 实现查找附近的人 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -325,7 +310,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#注册微信公众平台-测试号"><span class="nav-number">1.</span> <span class="nav-text">注册微信公众平台&#x2F;测试号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置微信公众平台-测试号"><span class="nav-number">2.</span> <span class="nav-text">配置微信公众平台&#x2F;测试号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取用户授权"><span class="nav-number">3.</span> <span class="nav-text">获取用户授权</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#服务端获取授权数据"><span class="nav-number">4.</span> <span class="nav-text">服务端获取授权数据</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#启用定时任务"><span class="nav-number">1.</span> <span class="nav-text">启用定时任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#设置定时任务"><span class="nav-number">2.</span> <span class="nav-text">设置定时任务</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -452,7 +437,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'JiangYongKang.github.io',
       owner       : 'JiangYongKang',
       admin       : ['JiangYongKang'],
-      id          : '5b6277bb0760790a635f1bc97a14fa24',
+      id          : '2c37dca96787416b173d42b4f8433541',
         language: 'zh-CN',
       distractionFreeMode: true
     });
