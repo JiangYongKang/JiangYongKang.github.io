@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="什么是面向切面编程AOP 是一种编程范式，并非是 Spring 的独创，它与语言无关，是一种编程思想。AOP 可以帮助我们将通用的逻辑从业务逻辑中分离出来。从项目角度来讲，有一些逻辑散布于程序的各个地方，但它们的逻辑又是千篇一律的相同。比如：我们需要打印每个请求的 URL、请求参数、IP地址，最简单的做法是在每一个 Controller 中去打印出这些信息。如果使用 AOP，我们能够更加轻松的处理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring AOP 的简介与使用">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2018/11/19/Spring-AOP-%E7%9A%84%E7%AE%80%E4%BB%8B%E4%B8%8E%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="什么是面向切面编程AOP 是一种编程范式，并非是 Spring 的独创，它与语言无关，是一种编程思想。AOP 可以帮助我们将通用的逻辑从业务逻辑中分离出来。从项目角度来讲，有一些逻辑散布于程序的各个地方，但它们的逻辑又是千篇一律的相同。比如：我们需要打印每个请求的 URL、请求参数、IP地址，最简单的做法是在每一个 Controller 中去打印出这些信息。如果使用 AOP，我们能够更加轻松的处理">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-11-19T07:42:13.000Z">
+<meta property="article:modified_time" content="2021-07-04T10:36:29.000Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="SpringBoot">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2018/11/19/Spring-AOP-%E7%9A%84%E7%AE%80%E4%BB%8B%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring AOP 的简介与使用 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2018/11/19/Spring-AOP-%E7%9A%84%E7%AE%80%E4%BB%8B%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring AOP 的简介与使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-11-19 15:42:13" itemprop="dateCreated datePublished" datetime="2018-11-19T15:42:13+08:00">2018-11-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">服务端开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="什么是面向切面编程"><a href="#什么是面向切面编程" class="headerlink" title="什么是面向切面编程"></a>什么是面向切面编程</h3><p>AOP 是一种编程范式，并非是 Spring 的独创，它与语言无关，是一种编程思想。AOP 可以帮助我们将通用的逻辑从业务逻辑中分离出来。从项目角度来讲，有一些逻辑散布于程序的各个地方，但它们的逻辑又是千篇一律的相同。比如：我们需要打印每个请求的 URL、请求参数、IP地址，最简单的做法是在每一个 Controller 中去打印出这些信息。如果使用 AOP，我们能够更加轻松的处理这些问题。打印日志并不是使用 AOP 的唯一场景，我们还可以通过切面去统一处理 <strong>声明式事务、缓存、应用安全</strong> 等等。</p>
+<a id="more"></a>
+
+<h3 id="AOP-相关术语"><a href="#AOP-相关术语" class="headerlink" title="AOP 相关术语"></a>AOP 相关术语</h3><p>AOP 作为一种编程范式，已经衍生出了术语它的一些相关术语，例如：<strong>切面、通知、连接点、织入</strong> 等等。为了更好的理解如何在 Spring 中使用 AOP，我们必须对这些术语有一定的认知。</p>
+<h4 id="通知-Advice"><a href="#通知-Advice" class="headerlink" title="通知(Advice)"></a>通知(Advice)</h4><p>Spring AOP 支持五种类型的通知,它们分别定义了切面在什么时候使用，以及定义了切面需要做些什么。</p>
+<ul>
+<li>@Before 前置通知，目标方法被调用之前执行</li>
+<li>@After 后置通知，目标方法完成之后执行</li>
+<li>@AfterReturning 返回通知，目标方法执行成功（未抛出异常）之后执行</li>
+<li>@AfterThrowing 异常通知，目标方法执行失败（抛出异常）之后执行</li>
+<li>@Around 环绕通知，目标方法执行前后都会调用</li>
+</ul>
+<h4 id="连接点（JoinPoint）"><a href="#连接点（JoinPoint）" class="headerlink" title="连接点（JoinPoint）"></a>连接点（JoinPoint）</h4><p>程序执行的某个特定位置：如类开始初始化前、类初始化后、类某个方法调用前、调用后、方法抛出异常后。一个类或一段程序代码拥有一些具有边界性质的特定点，这些点中的特定点就称为 “连接点”。Spring 仅支持方法的连接点，即仅能在方法调用前、方法调用后、方法抛出异常时以及方法调用前后这些程序执行点织入增强。连接点由两个信息确定：第一是用方法表示的程序执行点，第二是用相对点表示的方位。</p>
+<h4 id="切点（Poincut）"><a href="#切点（Poincut）" class="headerlink" title="切点（Poincut）"></a>切点（Poincut）</h4><p>每个程序类都拥有多个连接点，如一个拥有两个方法的类，这两个方法都是连接点，即连接点是程序类中客观存在的事物。AOP 通过 “切点” 定位特定的连接点。连接点相当于数据库中的记录，而切点相当于查询条件。切点和连接点不是一对一的关系，一个切点可以匹配多个连接点。在 Spring 中，切点通过<br><code>org.springframework.aop.Pointcut</code> 接口进行描述，它使用类和方法作为连接点的查询条件，Spring AOP 的规则解析引擎负责切点所设定的查询条件，找到对应的连接点。其实确切地说，不能称之为查询连接点，因为连接点是方法执行前、执行后等包括方位信息的具体程序执行点，而切点只定位到某个方法上，所以如果希望定位到具体连接点上，还需要提供方位信息。</p>
+<h4 id="切面（Aspect）"><a href="#切面（Aspect）" class="headerlink" title="切面（Aspect）"></a>切面（Aspect）</h4><p>切面由切点和增强（引介）组成，它既包括了横切逻辑的定义，也包括了连接点的定义，Spring AOP 就是负责实施切面的框架，它将切面所定义的横切逻辑织入到切面所指定的连接点中。</p>
+<h4 id="引入（Introduction）"><a href="#引入（Introduction）" class="headerlink" title="引入（Introduction）"></a>引入（Introduction）</h4><p>引入使我们具备了为类添加一些属性和方法的能力。这样，即使一个业务类原本没有实现某个接口，通过 AOP 的引介功能，我们可以动态地为该业务类添加接口的实现逻辑，让业务类成为这个接口的实现类。</p>
+<h4 id="织入（Weaving）"><a href="#织入（Weaving）" class="headerlink" title="织入（Weaving）"></a>织入（Weaving）</h4><p>织入是将增强添加对目标类具体连接点上的过程。AOP 像一台织布机，将目标类、增强或引介通过 AOP 这台织布机天衣无缝地编织到一起。根据不同的实现技术，AOP 有三种织入的方式：1. 编译期织入，这要求使用特殊的Java编译器。2. 类装载期织入，这要求使用特殊的类装载器。3. 动态代理织入，在运行期为目标类添加增强生成子类的方式。Spring 采用动态代理织入，而 AspectJ 采用编译期织入和类装载期织入。</p>
+<h4 id="代理（Proxy）"><a href="#代理（Proxy）" class="headerlink" title="代理（Proxy）"></a>代理（Proxy）</h4><p>一个类被 AOP 织入增强后，就产出了一个结果类，它是融合了原类和增强逻辑的代理类。根据不同的代理方式，代理类既可能是和原类具有相同接口的类，也可能就是原类的子类，所以我们可以采用调用原类相同的方式调用代理类。</p>
+<h3 id="AspectJ-切点表达式"><a href="#AspectJ-切点表达式" class="headerlink" title="AspectJ 切点表达式"></a>AspectJ 切点表达式</h3><p>Spring 只支持方法级别的连接点，切点表达式可以通过 <code>execution</code> 来定义。比如：<code>@Pointcut(value = &quot;execution(* com.vincent.springframework.example.Controller.*(..))&quot;)</code> 表示匹配 <code>com.vincent.springframework.example.Controller</code> 这个类下面全部的方法。<br>关于 AspectJ 的 execution 表达式的详细信息，可以查看这篇文章 <a href="https://www.cnblogs.com/powerwu/articles/5177662.html" target="_blank" rel="noopener">Spring AspectJ 的 execution表达式</a></p>
+<h3 id="添加-AsepctJ-的依赖"><a href="#添加-AsepctJ-的依赖" class="headerlink" title="添加 AsepctJ 的依赖"></a>添加 AsepctJ 的依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.aspectj<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>aspectjweaver<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.9.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-XML-定义切面"><a href="#使用-XML-定义切面" class="headerlink" title="使用 XML 定义切面"></a>使用 XML 定义切面</h3><p>在配置文件中创建切面，需要通过 Spring 的 <strong>aop</strong> 命名空间来开启。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 开启 AOP 的自动代理 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">aop:aspectj-autoproxy</span>/&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 配置包扫描路径 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">content:component-scan</span> <span class="attr">base-package</span>=<span class="string">"com.vincent.spring.framework.example"</span>/&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 被切入的类 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"messageService"</span> <span class="attr">class</span>=<span class="string">"com.vincent.spring.framework.example.MessageService"</span>/&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 切面类 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"messageAspect"</span> <span class="attr">class</span>=<span class="string">"com.vincent.spring.framework.example.MessageAspect"</span>/&gt;</span></span><br><span class="line"><span class="comment">&lt;!-- 定义切入点已经执行方法 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">aop:config</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">aop:aspect</span> <span class="attr">id</span>=<span class="string">"messageAspect"</span> <span class="attr">ref</span>=<span class="string">"messageAspect"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">aop:before</span> <span class="attr">method</span>=<span class="string">"beforeAction"</span> <span class="attr">pointcut</span>=<span class="string">"execution(* com.vincent.spring.framework.example.MessageService.call(..))"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">aop:before</span> <span class="attr">method</span>=<span class="string">"afterAction"</span> <span class="attr">pointcut</span>=<span class="string">"execution(* com.vincent.spring.framework.example.MessageService.call(..))"</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">aop:aspect</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">aop:config</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Java-配置定义切面"><a href="#使用-Java-配置定义切面" class="headerlink" title="使用 Java 配置定义切面"></a>使用 Java 配置定义切面</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableAspectJAutoProxy</span></span><br><span class="line"><span class="meta">@ComponentScan</span>(basePackage = <span class="string">"com.vincent.spring.framework.example"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AspectJConfig</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MessageAspect</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 目标方法执行之前</span></span><br><span class="line">    <span class="meta">@Pointcut</span>(<span class="string">"execution(* com.vincent.spring.framework.example.MessageService.call(..))"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">beforeAction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"before action"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 目标方法执行之后</span></span><br><span class="line">    <span class="meta">@Pointcut</span>(<span class="string">"execution(* com.vincent.spring.framework.example.MessageService.call(..))"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterAction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"after action"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/SPRINGBOOT/" rel="tag"># SpringBoot</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/11/18/Spring-Bean-%E8%A3%85%E9%85%8D%E5%92%8C%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5/" rel="prev" title="Spring Bean 装配和依赖注入">
+      <i class="fa fa-chevron-left"></i> Spring Bean 装配和依赖注入
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/01/01/Let-s-Encrypt-%E7%94%B3%E8%AF%B7%E5%85%8D%E8%B4%B9%E7%9A%84-Https-%E8%AF%81%E4%B9%A6/" rel="next" title="Let's Encrypt 申请免费的 Https 证书">
+      Let's Encrypt 申请免费的 Https 证书 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是面向切面编程"><span class="nav-number">1.</span> <span class="nav-text">什么是面向切面编程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AOP-相关术语"><span class="nav-number">2.</span> <span class="nav-text">AOP 相关术语</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#通知-Advice"><span class="nav-number">2.1.</span> <span class="nav-text">通知(Advice)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#连接点（JoinPoint）"><span class="nav-number">2.2.</span> <span class="nav-text">连接点（JoinPoint）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#切点（Poincut）"><span class="nav-number">2.3.</span> <span class="nav-text">切点（Poincut）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#切面（Aspect）"><span class="nav-number">2.4.</span> <span class="nav-text">切面（Aspect）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#引入（Introduction）"><span class="nav-number">2.5.</span> <span class="nav-text">引入（Introduction）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#织入（Weaving）"><span class="nav-number">2.6.</span> <span class="nav-text">织入（Weaving）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#代理（Proxy）"><span class="nav-number">2.7.</span> <span class="nav-text">代理（Proxy）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AspectJ-切点表达式"><span class="nav-number">3.</span> <span class="nav-text">AspectJ 切点表达式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#添加-AsepctJ-的依赖"><span class="nav-number">4.</span> <span class="nav-text">添加 AsepctJ 的依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-XML-定义切面"><span class="nav-number">5.</span> <span class="nav-text">使用 XML 定义切面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Java-配置定义切面"><span class="nav-number">6.</span> <span class="nav-text">使用 Java 配置定义切面</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">36</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <a href="https://beian.miit.gov.cn//" target="_blank" rel="noopener">鄂ICP备19001177号</a>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : '9f8f41165dc5cbb2705ac1ada9d4763f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
