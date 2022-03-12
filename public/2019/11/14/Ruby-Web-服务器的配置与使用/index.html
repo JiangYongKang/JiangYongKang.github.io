@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="PumaPuma 是 Rails 的默认 Web Server，在创建 Rails 项目时已经自动添加了 Puma 的依赖。Puma 是用了多进程加多线程模型，它可以同时在 fork 出来的多个 worker 中创建多个线程来处理请求；不仅如此 Puma 还实现了用于提高并发速度的 Reactor 模块和线程池能够在提升吞吐量的同时，降低内存的消耗。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ruby Web 服务器的配置与使用">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2019/11/14/Ruby-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E9%85%8D%E7%BD%AE%E4%B8%8E%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="PumaPuma 是 Rails 的默认 Web Server，在创建 Rails 项目时已经自动添加了 Puma 的依赖。Puma 是用了多进程加多线程模型，它可以同时在 fork 出来的多个 worker 中创建多个线程来处理请求；不仅如此 Puma 还实现了用于提高并发速度的 Reactor 模块和线程池能够在提升吞吐量的同时，降低内存的消耗。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-14T13:22:33.000Z">
+<meta property="article:modified_time" content="2022-03-12T08:08:43.767Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="Ruby">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2019/11/14/Ruby-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E9%85%8D%E7%BD%AE%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Ruby Web 服务器的配置与使用 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2019/11/14/Ruby-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E9%85%8D%E7%BD%AE%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ruby Web 服务器的配置与使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-14 21:22:33" itemprop="dateCreated datePublished" datetime="2019-11-14T21:22:33+08:00">2019-11-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RUBY/" itemprop="url" rel="index"><span itemprop="name">Ruby</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="Puma"><a href="#Puma" class="headerlink" title="Puma"></a>Puma</h3><p>Puma 是 Rails 的默认 Web Server，在创建 Rails 项目时已经自动添加了 Puma 的依赖。Puma 是用了多进程加多线程模型，它可以同时在 fork 出来的多个 worker 中创建多个线程来处理请求；不仅如此 Puma 还实现了用于提高并发速度的 Reactor 模块和线程池能够在提升吞吐量的同时，降低内存的消耗。</p>
+<a id="more"></a>
+
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gem <span class="string">'puma'</span>, <span class="string">'~&gt; 3.7'</span></span><br></pre></td></tr></table></figure>
+<p>创建 <code>config/puma.rb</code> 配置文件，下面是文件内容：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Puma can serve each request in a thread from an internal thread pool.</span></span><br><span class="line"><span class="comment"># The `threads` method setting takes two numbers: a minimum and maximum.</span></span><br><span class="line"><span class="comment"># Any libraries that use thread pools should be configured to match</span></span><br><span class="line"><span class="comment"># the maximum value specified for Puma. Default is set to 5 threads for minimum</span></span><br><span class="line"><span class="comment"># and maximum; this matches the default thread size of Active Record.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">threads_count = ENV.fetch(<span class="string">"RAILS_MAX_THREADS"</span>) &#123; <span class="number">5</span> &#125;</span><br><span class="line">threads threads_count, threads_count</span><br><span class="line"></span><br><span class="line"><span class="comment"># Specifies the `port` that Puma will listen on to receive requests; default is 3000.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">port        ENV.fetch(<span class="string">"PORT"</span>) &#123; <span class="number">3000</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># Specifies the `environment` that Puma will run in.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line">environment ENV.fetch(<span class="string">"RAILS_ENV"</span>) &#123; <span class="string">"development"</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># Specifies the number of `workers` to boot in clustered mode.</span></span><br><span class="line"><span class="comment"># Workers are forked webserver processes. If using threads and workers together</span></span><br><span class="line"><span class="comment"># the concurrency of the application would be max `threads` * `workers`.</span></span><br><span class="line"><span class="comment"># Workers do not work on JRuby or Windows (both of which do not support</span></span><br><span class="line"><span class="comment"># processes).</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># workers ENV.fetch("WEB_CONCURRENCY") &#123; 2 &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Use the `preload_app!` method when specifying a `workers` number.</span></span><br><span class="line"><span class="comment"># This directive tells Puma to first boot the application and load code</span></span><br><span class="line"><span class="comment"># before forking the application. This takes advantage of Copy On Write</span></span><br><span class="line"><span class="comment"># process behavior so workers use less memory. If you use this option</span></span><br><span class="line"><span class="comment"># you need to make sure to reconnect any threads in the `on_worker_boot`</span></span><br><span class="line"><span class="comment"># block.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># preload_app!</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># If you are preloading your application and using Active Record, it's</span></span><br><span class="line"><span class="comment"># recommended that you close any connections to the database before workers</span></span><br><span class="line"><span class="comment"># are forked to prevent connection leakage.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># before_fork do</span></span><br><span class="line"><span class="comment">#   ActiveRecord::Base.connection_pool.disconnect! if defined?(ActiveRecord)</span></span><br><span class="line"><span class="comment"># end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># The code in the `on_worker_boot` will be called if you are using</span></span><br><span class="line"><span class="comment"># clustered mode by specifying a number of `workers`. After each worker</span></span><br><span class="line"><span class="comment"># process is booted, this block will be run. If you are using the `preload_app!`</span></span><br><span class="line"><span class="comment"># option, you will want to use this block to reconnect to any threads</span></span><br><span class="line"><span class="comment"># or connections that may have been created at application boot, as Ruby</span></span><br><span class="line"><span class="comment"># cannot share connections between processes.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># on_worker_boot do</span></span><br><span class="line"><span class="comment">#   ActiveRecord::Base.establish_connection if defined?(ActiveRecord)</span></span><br><span class="line"><span class="comment"># end</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Allow puma to be restarted by `rails restart` command.</span></span><br><span class="line">plugin <span class="symbol">:tmp_restart</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Unicorn"><a href="#Unicorn" class="headerlink" title="Unicorn"></a>Unicorn</h3><p>与 Thin 同年发布的 Unicorn 虽然也是 Mongrel 项目的一个 fork，但是使用了完全不同的并发模型，每Unicorn 内部通过多次 fork 创建多个 worker 进程，所有的 worker 进程也都由一个 master 进程管理和控制。由于 master 进程的存在，当 worker 进程被意外杀掉后会被 master 进程重启，能够保证持续对外界提供服务，多个进程的 worker 也能够充分的利用多核 CPU 的性能，尽可能地提高请求的处理速度。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gem <span class="string">'unicorn'</span>, <span class="string">'~&gt; 5.5'</span>, <span class="string">'&gt;= 5.5.1'</span></span><br></pre></td></tr></table></figure>
+<p>创建 <code>config/unicorn.rb</code> 配置文件，下面是文件内容。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 启动 unicorn</span></span><br><span class="line"><span class="comment"># $ unicorn</span></span><br><span class="line"><span class="comment"># 带配置文件的方式启动</span></span><br><span class="line"><span class="comment"># $ unicorn -c config/unicorn.rb</span></span><br><span class="line"><span class="comment"># 启动生产环境</span></span><br><span class="line"><span class="comment"># $ unicorn -c config/unicorn.rb --env production</span></span><br><span class="line"><span class="comment"># 后台运行</span></span><br><span class="line"><span class="comment"># $ unicorn -c config/unicorn.rb --env production --daemonize</span></span><br><span class="line"><span class="comment"># 也可以通过 unicorn_rails 启动. unicorn_rails 命令更适用于 rails 项目，unicorn 命令适用于非 rails 项目。</span></span><br><span class="line"><span class="comment"># $ unicorn_rails -c config/unicorn.rb</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">module</span> <span class="title">Rails</span></span></span><br><span class="line">  <span class="class"><span class="keyword">class</span> &lt;&lt;self</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">root</span></span></span><br><span class="line">      File.expand_path(__FILE_<span class="number">_</span>).split(<span class="string">'/'</span>)[<span class="number">0</span>..-<span class="number">3</span>].join(<span class="string">'/'</span>)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Sample verbose configuration file for Unicorn (not Rack)</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># This configuration file documents many features of Unicorn</span></span><br><span class="line"><span class="comment"># that may not be needed for some applications. See</span></span><br><span class="line"><span class="comment"># https://bogomips.org/unicorn/examples/unicorn.conf.minimal.rb</span></span><br><span class="line"><span class="comment"># for a much simpler configuration file.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># See https://bogomips.org/unicorn/Unicorn/Configurator.html for complete</span></span><br><span class="line"><span class="comment"># documentation.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 worker_processes 数量</span></span><br><span class="line"><span class="comment"># Use at least one worker per core if you're on a dedicated server,</span></span><br><span class="line"><span class="comment"># more will usually help for _short_ waits on databases/caches.</span></span><br><span class="line">worker_processes <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置运行 worker processes 的用户和组</span></span><br><span class="line"><span class="comment"># Since Unicorn is never exposed to outside clients, it does not need to</span></span><br><span class="line"><span class="comment"># run on the standard HTTP port (80), there is no reason to start Unicorn</span></span><br><span class="line"><span class="comment"># as root unless it's from system init scripts.</span></span><br><span class="line"><span class="comment"># If running the master process as root and the workers as an unprivileged</span></span><br><span class="line"><span class="comment"># user, do this to switch euid/egid in the workers (also chowns logs):</span></span><br><span class="line"><span class="comment"># user "unprivileged_user", "unprivileged_group"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 unicorn 工作目录，SIGUSR2 将启动一个新的 unicorn 实例在这个目录。</span></span><br><span class="line"><span class="comment"># Help ensure your application will always spawn in the symlinked</span></span><br><span class="line"><span class="comment"># "current" directory that Capistrano sets up.</span></span><br><span class="line">working_directory Rails.root <span class="comment"># available in 0.94.0+</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 监听地址，可以使是tcp地址，也可以是UNIX domain sockets</span></span><br><span class="line"><span class="comment"># listen on both a Unix domain socket and a TCP port,</span></span><br><span class="line"><span class="comment"># we use a shorter backlog for quicker failover when busy</span></span><br><span class="line"><span class="comment"># <span class="doctag">TODO:</span> listen to port 3000 on the IPv6 loopback interface</span></span><br><span class="line"><span class="comment"># listen "[::1]:3000"</span></span><br><span class="line"><span class="comment"># <span class="doctag">TODO:</span> listen to port 3000 on the loopback interface</span></span><br><span class="line"><span class="comment"># listen "127.0.0.1:3000"</span></span><br><span class="line"><span class="comment"># <span class="doctag">TODO:</span> listen on the given Unix domain socket</span></span><br><span class="line">listen <span class="string">"<span class="subst">#&#123;Rails.root&#125;</span>/.unicorn.sock"</span>, <span class="symbol">:backlog</span> =&gt; <span class="number">64</span></span><br><span class="line"><span class="comment"># <span class="doctag">TODO:</span> listen to port 3000 on all TCP interfaces</span></span><br><span class="line">listen <span class="number">3000</span>, <span class="symbol">:tcp_nopush</span> =&gt; <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 worker processes 的超时时间</span></span><br><span class="line"><span class="comment"># nuke workers after 30 seconds instead of 60 seconds (the default)</span></span><br><span class="line">timeout <span class="number">30</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置pid文件的位置</span></span><br><span class="line"><span class="comment"># feel free to point this anywhere accessible on the filesystem</span></span><br><span class="line">pid <span class="string">"<span class="subst">#&#123;Rails.root&#125;</span>/tmp/pids/unicorn.pid"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 Logger 输出的位置</span></span><br><span class="line"><span class="comment"># By default, the Unicorn logger will write to stderr.</span></span><br><span class="line"><span class="comment"># Additionally, ome applications/frameworks log to stderr or stdout,</span></span><br><span class="line"><span class="comment"># so prevent them from going to /dev/null when daemonized here:</span></span><br><span class="line"><span class="comment"># 重定向 stderr 到指定文件</span></span><br><span class="line"><span class="comment"># stderr_path "#&#123;Rails.root&#125;/log/unicorn.stderr.log"</span></span><br><span class="line"><span class="comment"># 重定向 stdout 到指定文件</span></span><br><span class="line"><span class="comment"># stdout_path "#&#123;Rails.root&#125;/log/unicorn.stdout.log"</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 forking worker processes 之前预加载程序</span></span><br><span class="line"><span class="comment"># combine Ruby 2.0.0+ with "preload_app true" for memory savings</span></span><br><span class="line">preload_app <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 禁止 rewindability，可以提高上传的性能，降低 io 和内存使用</span></span><br><span class="line">rewindable_input <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查客户端链接是否断开，防止断开的请求调用。</span></span><br><span class="line"><span class="comment"># Enable this flag to have unicorn test client connections by writing the</span></span><br><span class="line"><span class="comment"># beginning of the HTTP headers before calling the application.  This</span></span><br><span class="line"><span class="comment"># prevents calling the application for connections that have disconnected</span></span><br><span class="line"><span class="comment"># while queued.  This is only guaranteed to detect clients on the same</span></span><br><span class="line"><span class="comment"># host unicorn runs on, and unlikely to detect disconnects even on a</span></span><br><span class="line"><span class="comment"># fast LAN.</span></span><br><span class="line">check_client_connection <span class="literal">false</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># local variable to guard against running a hook multiple times</span></span><br><span class="line">run_once = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 在 master fork work之前被调用。</span></span><br><span class="line">before_fork <span class="keyword">do</span> <span class="params">|server, worker|</span></span><br><span class="line">  <span class="comment"># the following is highly recomended for Rails + "preload_app true"</span></span><br><span class="line">  <span class="comment"># as there's no need for the master process to hold a connection</span></span><br><span class="line">  <span class="keyword">defined</span>?(ActiveRecord::Base) <span class="keyword">and</span></span><br><span class="line">    ActiveRecord::Base.connection.disconnect!</span><br><span class="line"></span><br><span class="line">  <span class="comment"># Occasionally, it may be necessary to run non-idempotent code in the</span></span><br><span class="line">  <span class="comment"># master before forking.  Keep in mind the above disconnect! example</span></span><br><span class="line">  <span class="comment"># is idempotent and does not need a guard.</span></span><br><span class="line">  <span class="keyword">if</span> run_once</span><br><span class="line">    <span class="comment"># do_something_once_here ...</span></span><br><span class="line">    run_once = <span class="literal">false</span> <span class="comment"># prevent from firing again</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># The following is only recommended for memory/DB-constrained</span></span><br><span class="line">  <span class="comment"># installations.  It is not needed if your system can house</span></span><br><span class="line">  <span class="comment"># twice as many worker_processes as you have configured.</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment"># # This allows a new master process to incrementally</span></span><br><span class="line">  <span class="comment"># # phase out the old master process with SIGTTOU to avoid a</span></span><br><span class="line">  <span class="comment"># # thundering herd (especially in the "preload_app false" case)</span></span><br><span class="line">  <span class="comment"># # when doing a transparent upgrade.  The last worker spawned</span></span><br><span class="line">  <span class="comment"># # will then kill off the old master process with a SIGQUIT.</span></span><br><span class="line">  <span class="comment"># old_pid = "#&#123;server.config[:pid]&#125;.oldbin"</span></span><br><span class="line">  <span class="comment"># if old_pid != server.pid</span></span><br><span class="line">  <span class="comment">#   begin</span></span><br><span class="line">  <span class="comment">#     sig = (worker.nr + 1) &gt;= server.worker_processes ? :QUIT : :TTOU</span></span><br><span class="line">  <span class="comment">#     Process.kill(sig, File.read(old_pid).to_i)</span></span><br><span class="line">  <span class="comment">#   rescue Errno::ENOENT, Errno::ESRCH</span></span><br><span class="line">  <span class="comment">#   end</span></span><br><span class="line">  <span class="comment"># end</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment"># Throttle the master from forking too quickly by sleeping.  Due</span></span><br><span class="line">  <span class="comment"># to the implementation of standard Unix signal handlers, this</span></span><br><span class="line">  <span class="comment"># helps (but does not completely) prevent identical, repeated signals</span></span><br><span class="line">  <span class="comment"># from being lost when the receiving process is busy.</span></span><br><span class="line">  <span class="comment"># sleep 1</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">TODO:</span> worker fork 之后被调用。</span></span><br><span class="line">after_fork <span class="keyword">do</span> <span class="params">|server, worker|</span></span><br><span class="line">  <span class="comment"># per-process listener ports for debugging/admin/migrations</span></span><br><span class="line">  <span class="comment"># addr = "127.0.0.1:#&#123;9293 + worker.nr&#125;"</span></span><br><span class="line">  <span class="comment"># server.listen(addr, :tries =&gt; -1, :delay =&gt; 5, :tcp_nopush =&gt; true)</span></span><br><span class="line"></span><br><span class="line">  <span class="comment"># the following is *required* for Rails + "preload_app true",</span></span><br><span class="line">  <span class="keyword">defined</span>?(ActiveRecord::Base) <span class="keyword">and</span></span><br><span class="line">    ActiveRecord::Base.establish_connection</span><br><span class="line"></span><br><span class="line">  <span class="comment"># if preload_app is true, then you may also want to check and</span></span><br><span class="line">  <span class="comment"># restart any other shared sockets/descriptors such as Memcached,</span></span><br><span class="line">  <span class="comment"># and Redis.  TokyoCabinet file handles are safe to reuse</span></span><br><span class="line">  <span class="comment"># between any number of forked children (assuming your kernel</span></span><br><span class="line">  <span class="comment"># correctly implements pread()/pwrite() system calls)</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Thin"><a href="#Thin" class="headerlink" title="Thin"></a>Thin</h3><p>Thin 使用 Reactor 模型处理客户端的 HTTP 请求，每一个请求都会交由 EventMachine，通过内部对事件的分发，最终执行相应的回调，这种事件驱动的 IO 模型与 node.js 非常相似，使用单进程单线程的并发模型却能够快速处理 HTTP 请求。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gem &#39;thin&#39;, &#39;~&gt; 1.7&#39;, &#39;&gt;&#x3D; 1.7.2&#39;</span><br></pre></td></tr></table></figure>
+<p>Thin 提供了生成配置文件的功能，在项目根目录输入 <code>thin config -C config/thin.yml</code> 可以快速的创建一份配置文件。</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">chdir:</span> <span class="string">"/Users/vincent/"</span></span><br><span class="line"><span class="attr">environment:</span> <span class="string">development</span></span><br><span class="line"><span class="attr">address:</span> <span class="number">0.0</span><span class="number">.0</span><span class="number">.0</span></span><br><span class="line"><span class="attr">port:</span> <span class="number">3000</span></span><br><span class="line"><span class="attr">timeout:</span> <span class="number">30</span></span><br><span class="line"><span class="attr">log:</span> <span class="string">"/Users/vincent/log/thin.log"</span></span><br><span class="line"><span class="attr">pid:</span> <span class="string">tmp/pids/thin.pid</span></span><br><span class="line"><span class="attr">max_conns:</span> <span class="number">1024</span></span><br><span class="line"><span class="attr">max_persistent_conns:</span> <span class="number">100</span></span><br><span class="line"><span class="attr">require:</span> <span class="string">[]</span></span><br><span class="line"><span class="attr">wait:</span> <span class="number">30</span></span><br><span class="line"><span class="attr">threadpool_size:</span> <span class="number">20</span></span><br><span class="line"><span class="attr">daemonize:</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><ul>
+<li><a href="http://www.mojidong.com/rails/2013/04/20/rails-nginx-unicorn/" target="_blank" rel="noopener">http://www.mojidong.com/rails/2013/04/20/rails-nginx-unicorn/</a></li>
+<li><a href="https://ruby-china.org/topics/4709" target="_blank" rel="noopener">https://ruby-china.org/topics/4709</a></li>
+<li><a href="https://bogomips.org/unicorn/" target="_blank" rel="noopener">https://bogomips.org/unicorn/</a></li>
+<li><a href="https://read01.com/zh-hk/zm5B.html#.Xc1XC-u-t0t" target="_blank" rel="noopener">https://read01.com/zh-hk/zm5B.html#.Xc1XC-u-t0t</a></li>
+<li><a href="https://ruby-china.org/topics/25276" target="_blank" rel="noopener">https://ruby-china.org/topics/25276</a></li>
+<li><a href="https://ruby-china.org/topics/10832" target="_blank" rel="noopener">https://ruby-china.org/topics/10832</a></li>
+<li><a href="https://stackoverflow.com/questions/4113299/ruby-on-rails-server-options" target="_blank" rel="noopener">https://stackoverflow.com/questions/4113299/ruby-on-rails-server-options</a></li>
+<li><a href="https://draveness.me/ruby-webserver" target="_blank" rel="noopener">https://draveness.me/ruby-webserver</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RUBY/" rel="tag"># Ruby</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/11/13/Ruby-%E4%B8%AD%E7%9A%84%E5%B8%B8%E9%87%8F%E6%9F%A5%E6%89%BE/" rel="prev" title="Ruby 中的常量查找">
+      <i class="fa fa-chevron-left"></i> Ruby 中的常量查找
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/11/21/%E5%9C%A8-Rails-%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%BD%BF%E7%94%A8-Sidekiq-%E5%A4%84%E7%90%86%E5%BC%82%E6%AD%A5%E4%BB%BB%E5%8A%A1/" rel="next" title="在 Rails 项目中使用 Sidekiq 处理异步任务">
+      在 Rails 项目中使用 Sidekiq 处理异步任务 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Puma"><span class="nav-number">1.</span> <span class="nav-text">Puma</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Unicorn"><span class="nav-number">2.</span> <span class="nav-text">Unicorn</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Thin"><span class="nav-number">3.</span> <span class="nav-text">Thin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考文献"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <a href="https://beian.miit.gov.cn//" target="_blank" rel="noopener">鄂ICP备19001177号</a>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : 'edbc54bc411eca687da813dcb173ee79',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Redis 通过 MULTI EXEC WATCH 等命令来实现事务功能。事务提供了一种将多个命令打包，然后一次性、按顺序地执行多个命令的机制，并且在事务执行期间，服务器不会中断事务而改去执行其他客户端的命令请求，它会将事务中的所有命令都执行完毕，然后才去处理其他客户端的命令请求。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解 Redis 事务">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2020/04/19/%E7%90%86%E8%A7%A3-Redis-%E4%BA%8B%E5%8A%A1/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="Redis 通过 MULTI EXEC WATCH 等命令来实现事务功能。事务提供了一种将多个命令打包，然后一次性、按顺序地执行多个命令的机制，并且在事务执行期间，服务器不会中断事务而改去执行其他客户端的命令请求，它会将事务中的所有命令都执行完毕，然后才去处理其他客户端的命令请求。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-04-19T10:29:38.000Z">
+<meta property="article:modified_time" content="2022-03-12T08:08:43.813Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2020/04/19/%E7%90%86%E8%A7%A3-Redis-%E4%BA%8B%E5%8A%A1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>理解 Redis 事务 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2020/04/19/%E7%90%86%E8%A7%A3-Redis-%E4%BA%8B%E5%8A%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解 Redis 事务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-19 18:29:38" itemprop="dateCreated datePublished" datetime="2020-04-19T18:29:38+08:00">2020-04-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">服务端开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Redis 通过 <code>MULTI</code> <code>EXEC</code> <code>WATCH</code> 等命令来实现事务功能。事务提供了一种将多个命令打包，然后一次性、按顺序地执行多个命令的机制，并且在事务执行期间，服务器不会中断事务而改去执行其他客户端的命令请求，它会将事务中的所有命令都执行完毕，然后才去处理其他客户端的命令请求。</p>
+<a id="more"></a>
+
+<h3 id="如何使用事务"><a href="#如何使用事务" class="headerlink" title="如何使用事务"></a>如何使用事务</h3><p>以下是一个事务的执行过程，该事务首先以一个 <code>MULTI</code> 命令为开始，接着将多个命令放到事务当中，最后由 <code>EXEC</code> 命令将这个事务提交给服务器执行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; SET &quot;name&quot; &quot;Practical Common Lisp&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; GET &quot;name&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; SET &quot;author&quot; &quot;Peter Seibel&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; Get &quot;author&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; EXEC</span><br><span class="line">1) OK</span><br><span class="line">2) &quot;Practical Common Lisp&quot;</span><br><span class="line">3) OK</span><br><span class="line">4) &quot;Peter Seibel&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="事务是如何实现的"><a href="#事务是如何实现的" class="headerlink" title="事务是如何实现的"></a>事务是如何实现的</h3><p><code>MULTI</code> 命令标志着一个事务的开启，当开启一个事务后，服务器会根据接收到的不同的命令做出不同的操作：</p>
+<ul>
+<li>如果服务端收到的是 <code>EXEC</code> <code>DISCARD</code> <code>WATCH</code> <code>MULTI</code> 命令，那么服务端会立即执行这些命令</li>
+<li>如果服务端收到的不是以上四个命令，那么服务端不会立马执行命令，而是将这些命令放入一个命令队列中，然后向客户端返回 “QUEUED”</li>
+</ul>
+<p>当一个处于事务上下文的客户端向服务器发送 <code>EXEC</code> 命令时，这个 <code>EXEC</code> 命令将立即被服务器执行，服务器会遍历客户端的事务队列，执行队列中保存的所有命令，最后将全部的执行结果一次返回给客户端。反之，当发送的是 <code>DISCARD</code> 命令时，服务器会立马丢弃队列中的所有命令，并且退出事务上下文状态。<br/></p>
+<p>Redis 的事务与关系型数据库的事务的不同点在于，Redis 只有执行了 <code>EXEC</code> 命令才会依次的去执行队列中的命令，而关系型数据库即便没有提交事务也会进行写的操作。以 <code>MySQL</code> 为例，如果将隔离级别设置为 <code>Read Uncommitted</code> 那么在 A 事务中就可以看到 B 事务未提交的修改。</p>
+<h3 id="Redis-事务是否满足-ACID"><a href="#Redis-事务是否满足-ACID" class="headerlink" title="Redis 事务是否满足 ACID"></a>Redis 事务是否满足 ACID</h3><p>在 Redis 中，事务总是具备 <strong>原子性</strong> <strong>一致性</strong> <strong>隔离性</strong> 的，至于是否具备 <strong>持久性</strong> 需要根据 Redis 选择的持久化模式来判断。下面的命令将逐一展示 Redis 对 <code>ACID</code> 的支持。</p>
+<h3 id="Redis-事务的原子性"><a href="#Redis-事务的原子性" class="headerlink" title="Redis 事务的原子性"></a>Redis 事务的原子性</h3><p>事务具有原子性指的是，数据库将事务事务中的多个操作当做一个整体来执行，服务器要么就执行事务中的所有操作，要么就一个操作都不执行。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># 事务中没有发生异常，所有的命令都得到执行</span><br><span class="line">127.0.0.1:6379&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; SET MSG &quot;HELLO&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; GET MSG</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; EXEC</span><br><span class="line">1) OK</span><br><span class="line">2) &quot;HELLO&quot;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 因为错误的使用了 GET 命令，事务中发生了异常，所有的命令都没有执行</span><br><span class="line">127.0.0.1:6379&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; SET MSG &quot;HELLO&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; GET</span><br><span class="line">(error) ERR wrong number of arguments for &#39;get&#39; command</span><br><span class="line">127.0.0.1:6379&gt; EXEC</span><br><span class="line">(error) EXECABORT Transaction discarded because of previous errors.</span><br></pre></td></tr></table></figure>
+
+<h3 id="Redis-事务的一致性"><a href="#Redis-事务的一致性" class="headerlink" title="Redis 事务的一致性"></a>Redis 事务的一致性</h3><p>事务具有一致性指的是，如果数据库在执行事务前是一致的，那么在事务执行之后，无论事务是否执行成功，数据库也应该是一致的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; SET MSG &quot;HELLO&quot;</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; MULTI</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; GET MSG</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; RPUSH MSG &quot;WORLD&quot;</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; GET MSG</span><br><span class="line">QUEUED</span><br><span class="line">127.0.0.1:6379&gt; EXEC</span><br><span class="line">1) &quot;HELLO&quot;</span><br><span class="line">2) (error) WRONGTYPE Operation against a key holding the wrong kind of value</span><br><span class="line">3) &quot;HELLO&quot;</span><br></pre></td></tr></table></figure>
+
+<p>我们先将 <code>MSG</code> 设置成一个字符串键，然后在事务上下文中尝试对 <code>MSG</code> 执行只能用于列表键的 <code>RPUSH</code> 命令，这将会在事务上下文中引发一个错误。错误的命令操作会被服务器识别出来，而未出错的命令仍然会继续执行。出错的命令不会对数据库做出任何修改，也不会对数据库的一致性产生任何影响。</p>
+<h3 id="Redis-事务的隔离性"><a href="#Redis-事务的隔离性" class="headerlink" title="Redis 事务的隔离性"></a>Redis 事务的隔离性</h3><p>事务的隔离性指的是，即使数据库中有多个事务并发地执行，各个事务之间也不会互相影响，并且在并发状态下执行的事务和串行执行的事务产生的结果完全相同。因为 Redis 使用单线程的方式来执行事务（以及事务队列中的命令），并且服务器保证，在执行事务期间不会对事务进行中断，因此，Redis 的事务总是以串行的方式运行的，并且事务也总是具有隔离性的。</p>
+<h3 id="Redis-事务的持久性"><a href="#Redis-事务的持久性" class="headerlink" title="Redis 事务的持久性"></a>Redis 事务的持久性</h3><p>事务的耐久性指的是，当一个事务执行完毕时，执行这个事务所得的结果已经被保存到永久性存储介质（比如硬盘）里面了，即使服务器在事务执行完毕之后停机，执行事务所得的结果也不会丢失。因为 Redis 的事务不过是简单地用队列包裹起了一组 Redis 命令，Redis 并没有为事务提供任何额外的持久化功能，所以 Redis 事务的耐久性由 Redis 所使用的持久化模式决定：</p>
+<ul>
+<li>当服务器在无持久化的内存模式下运作时，事务不具有耐久性，一旦服务器停机，包括事务数据在内的所有服务器数据都将丢失</li>
+<li>当服务器在 RDB 持久化模式下运作时，服务器只会在特定的保存条件被满足时，才会执行 BGSAVE 命令，对数据库进行保存操作，并且异步执行的 BGSAVE 不能保证事务数据被第一时间保存到硬盘里面，因此 RDB 持久化模式下的事务也不具有耐久性</li>
+<li>当服务器运行在 AOF 持久化模式下，并且 <code>appendfsync</code> 选项的值为 <code>always</code> 时，程序总会在执行命令之后调用同步（sync）函数，将命令数据真正地保存到硬盘里面，因此这种配置下的事务是具有耐久性的</li>
+<li>当服务器运行在 AOF 持久化模式下，并且 <code>appendfsync</code> 选项的值为 <code>everysec</code> 时，程序会每秒同步一次命令数据到硬盘。因为停机可能会恰好发生在等待同步的那一秒钟之内，这可能会造成事务数据丢失，所以这种配置下的事务不具有耐久性</li>
+<li>当服务器运行在 AOF 持久化模式下，并且 <code>appendfsync</code> 选项的值为 <code>no</code> 时，程序会交由操作系统来决定何时将命令数据同步到硬盘。因为事务数据可能在等待同步的过程中丢失，所以这种配置下的事务不具有耐久性</li>
+</ul>
+<h3 id="WATCH-是如何实现的"><a href="#WATCH-是如何实现的" class="headerlink" title="WATCH 是如何实现的"></a>WATCH 是如何实现的</h3><p><code>WATCH</code> 命令是一个 <strong>乐观锁（optimistic locking）</strong>，它可以在 EXEC 命令执行之前，监视任意数量的数据库键，并在 EXEC 命令执行时，检查被监视的键是否至少有一个已经被修改过了，如果是的话，服务器将拒绝执行事务，并向客户端返回代表事务执行失败的空回复。下面的表格展示了两个客户端执行的过程</p>
+<table>
+<thead>
+<tr>
+<th align="left">时间</th>
+<th align="left">客户端 A</th>
+<th align="left">客户端 B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">T1</td>
+<td align="left">WATCH MSG</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">T2</td>
+<td align="left">MULTI</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">T3</td>
+<td align="left">SET MSG &quot;HELLO&quot;</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">T4</td>
+<td align="left"></td>
+<td align="left">SET MSG &quot;WORD&quot;</td>
+</tr>
+<tr>
+<td align="left">T5</td>
+<td align="left">EXEC</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<p>在时间 T4，客户端 B 修改了 <code>&quot;MSG&quot;</code> 键的值，当客户端 A 在 T5 执行 <code>EXEC</code> 命令时，服务器会发现 <code>WATCH</code> 监视的键 <code>&quot;MSG&quot;</code> 已经被修改，因此服务器拒绝执行客户端 A 的事务，并向客户端 A 返回空回复。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/REDIS/" rel="tag"># Redis</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/14/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%E4%B8%8E%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE/" rel="prev" title="类加载机制与双亲委派">
+      <i class="fa fa-chevron-left"></i> 类加载机制与双亲委派
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/21/%E7%90%86%E8%A7%A3-Redis-%E7%9A%84%E6%8C%81%E4%B9%85%E5%8C%96%E6%9C%BA%E5%88%B6/" rel="next" title="理解 Redis 的持久化机制">
+      理解 Redis 的持久化机制 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#如何使用事务"><span class="nav-number">1.</span> <span class="nav-text">如何使用事务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事务是如何实现的"><span class="nav-number">2.</span> <span class="nav-text">事务是如何实现的</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis-事务是否满足-ACID"><span class="nav-number">3.</span> <span class="nav-text">Redis 事务是否满足 ACID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis-事务的原子性"><span class="nav-number">4.</span> <span class="nav-text">Redis 事务的原子性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis-事务的一致性"><span class="nav-number">5.</span> <span class="nav-text">Redis 事务的一致性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis-事务的隔离性"><span class="nav-number">6.</span> <span class="nav-text">Redis 事务的隔离性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis-事务的持久性"><span class="nav-number">7.</span> <span class="nav-text">Redis 事务的持久性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WATCH-是如何实现的"><span class="nav-number">8.</span> <span class="nav-text">WATCH 是如何实现的</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <a href="https://beian.miit.gov.cn//" target="_blank" rel="noopener">鄂ICP备19001177号</a>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : '3293415decc328b2ad9e4ac0ef0dbb74',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
