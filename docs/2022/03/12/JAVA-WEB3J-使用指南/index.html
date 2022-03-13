@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|IBM Plex Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Web3J 是一个轻量级、高度模块化、反应式、类型安全的 Java 和 Android 库，用于处理智能合约并与以太坊网络上的客户端（节点）集成。这使您可以使用以太坊区块链，而无需为平台编写自己的集成代码的额外开销。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java Web3J 使用指南">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2022/03/12/JAVA-WEB3J-%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="Web3J 是一个轻量级、高度模块化、反应式、类型安全的 Java 和 Android 库，用于处理智能合约并与以太坊网络上的客户端（节点）集成。这使您可以使用以太坊区块链，而无需为平台编写自己的集成代码的额外开销。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-03-12T15:03:02.000Z">
+<meta property="article:modified_time" content="2022-03-13T03:58:18.000Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="Web3J">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2022/03/12/JAVA-WEB3J-%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java Web3J 使用指南 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2022/03/12/JAVA-WEB3J-%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java Web3J 使用指南
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-03-12 23:03:02" itemprop="dateCreated datePublished" datetime="2022-03-12T23:03:02+08:00">2022-03-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-13 11:58:18" itemprop="dateModified" datetime="2022-03-13T11:58:18+08:00">2022-03-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" itemprop="url" rel="index"><span itemprop="name">区块链</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>Web3J</strong> 是一个轻量级、高度模块化、反应式、类型安全的 <strong>Java</strong> 和 <strong>Android</strong> 库，用于处理智能合约并与以太坊网络上的客户端（节点）集成。这使您可以使用以太坊区块链，而无需为平台编写自己的集成代码的额外开销。</p>
+<a id="more"></a>
+
+<h3 id="提供的功能"><a href="#提供的功能" class="headerlink" title="提供的功能"></a>提供的功能</h3><ul>
+<li>基于 HTTP 和 IPC 的以太坊 JSON-RPC 客户端 API 的完整实现</li>
+<li>以太坊钱包支持</li>
+<li>自动生成 Java 智能合约包装器，以从本机 Java 代码创建、部署、交易和调用智能合约（支持 Solidity 和 Truffle 定义格式）</li>
+<li>以太坊名称服务 (ENS) 支持</li>
+<li>支持 Alchemy 和 Infura，因此您不必自己运行以太坊客户端</li>
+<li>安卓兼容</li>
+<li>命令行工具</li>
+</ul>
+<h3 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.web3j<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.8.7<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line">        Web3ClientVersion clientVersion = client.web3ClientVersion().sendAsync().get();</span><br><span class="line">        System.out.println(clientVersion.getWeb3ClientVersion());</span><br><span class="line">        <span class="comment">// =&gt; Geth/v1.10.15-omnibus-hotfix-f4decf48/linux-amd64/go1.17.6</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Web3J-调用-JSON-RPC"><a href="#使用-Web3J-调用-JSON-RPC" class="headerlink" title="使用 Web3J 调用 JSON RPC"></a>使用 Web3J 调用 JSON RPC</h3><h5 id="Example-1-获取以太坊账户余额"><a href="#Example-1-获取以太坊账户余额" class="headerlink" title="Example-1: 获取以太坊账户余额"></a>Example-1: 获取以太坊账户余额</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line">        EthGetBalance ethGetBalance = client.ethGetBalance(</span><br><span class="line">                <span class="string">"0x64f44b31ad0ed4537f94a5c084cfba8945463345"</span>,</span><br><span class="line">                DefaultBlockParameterName.fromString(DefaultBlockParameterName.LATEST.name())</span><br><span class="line">        ).sendAsync().get();</span><br><span class="line">        System.out.println(ethGetBalance.getBalance());</span><br><span class="line">        <span class="comment">// =&gt; 741270235881990866</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Example-2-获取当前的-Gas-价格"><a href="#Example-2-获取当前的-Gas-价格" class="headerlink" title="Example-2: 获取当前的 Gas 价格"></a>Example-2: 获取当前的 Gas 价格</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line">        EthGasPrice ethGasPrice = client.ethGasPrice().sendAsync().get();</span><br><span class="line">        System.out.println(ethGasPrice.getGasPrice());</span><br><span class="line">        <span class="comment">// =&gt; 41493167936</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Example-3-通过交易哈希获取交易详情"><a href="#Example-3-通过交易哈希获取交易详情" class="headerlink" title="Example-3: 通过交易哈希获取交易详情"></a>Example-3: 通过交易哈希获取交易详情</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line">        String transactionHash = <span class="string">"0x9030edd43f8ae6c4ed49bcbc11dd7d6f6ce2798e8bb1c5ea4f1e130780fec74a"</span>;</span><br><span class="line">        EthGetTransactionReceipt ethGetTransactionReceipt = client.ethGetTransactionReceipt(transactionHash).sendAsync().get();</span><br><span class="line">        TransactionReceipt transactionReceipt = ethGetTransactionReceipt.getTransactionReceipt().orElseThrow(RuntimeException::<span class="keyword">new</span>);</span><br><span class="line">        System.out.println(transactionReceipt);</span><br><span class="line">        <span class="comment">// =&gt; TransactionReceipt&#123;transactionHash='0x9030edd43f8ae6c4ed49bcbc11dd7d6f6ce2798e8bb1c5ea4f1e130780fec74a', transactionIndex='0x27', blockHash='0xf0f28e6040d3440abb4abb1da59bf144fc2e210c4d321061d58da3fa3b011b0f', blockNumber='0xb84dee', cumulativeGasUsed='0x79d27a', gasUsed='0xc704', contractAddress='null', root='null', status='0x1', from='0x5ba191f4b0d70b778d9877e217dfb2c5daa353be', to='0xf80a32a835f79d7787e8a8ee5721d0feafd78108', logs=[Log&#123;removed=false, logIndex='0x21', transactionIndex='0x27', transactionHash='0x9030edd43f8ae6c4ed49bcbc11dd7d6f6ce2798e8bb1c5ea4f1e130780fec74a', blockHash='0xf0f28e6040d3440abb4abb1da59bf144fc2e210c4d321061d58da3fa3b011b0f', blockNumber='0xb84dee', address='0xf80a32a835f79d7787e8a8ee5721d0feafd78108', data='0x00000000000000000000000000000000000000000000152d02c7e14af6800000', type='null', topics=[0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef, 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000005ba191f4b0d70b778d9877e217dfb2c5daa353be]&#125;], logsBloom='0x80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000008000000000000000000000000000000000000000000000000020000000000000000000800000000000000000000000010000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000002000000000000000200000000000000000000000000000000000020000000000200000000000000000000000000000000000000000000000000000000', revertReason='null', type='0x2', effectiveGasPrice='0x15fb4c0517'&#125;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Web3J-订阅链上的事件"><a href="#使用-Web3J-订阅链上的事件" class="headerlink" title="使用 Web3J 订阅链上的事件"></a>使用 Web3J 订阅链上的事件</h3><p><strong>Web3J</strong> 的函数式编程的特性让我们设置观察者很容易，我们可以设置订阅者，监听链上发生的一些事情，如出块，交易，日志等。</p>
+<h5 id="Example-1-订阅新的区块"><a href="#Example-1-订阅新的区块" class="headerlink" title="Example-1: 订阅新的区块"></a>Example-1: 订阅新的区块</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException, ConnectException </span>&#123;</span><br><span class="line">        WebSocketService webSocketService = <span class="keyword">new</span> WebSocketService(<span class="string">"wss://ropsten.infura.io/ws/v3/You Infura Project Id"</span>, <span class="keyword">true</span>);</span><br><span class="line">        webSocketService.connect();</span><br><span class="line">        Web3j client = Web3j.build(webSocketService);</span><br><span class="line">        Disposable subscribe = client.replayPastBlocksFlowable(DefaultBlockParameterName.fromString(<span class="string">"earliest"</span>), <span class="keyword">true</span>).subscribe(ethBlock -&gt; &#123;</span><br><span class="line">            System.out.println(ethBlock.getBlock());</span><br><span class="line">            <span class="comment">// =&gt; org.web3j.protocol.core.methods.response.EthBlock$Block@39fcf950</span></span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Example-2-订阅新的交易"><a href="#Example-2-订阅新的交易" class="headerlink" title="Example-2: 订阅新的交易"></a>Example-2: 订阅新的交易</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException, ConnectException </span>&#123;</span><br><span class="line">        WebSocketService webSocketService = <span class="keyword">new</span> WebSocketService(<span class="string">"wss://ropsten.infura.io/ws/v3/You Infura Project Id"</span>, <span class="keyword">true</span>);</span><br><span class="line">        webSocketService.connect();</span><br><span class="line">        Web3j client = Web3j.build(webSocketService);</span><br><span class="line">        Disposable subscribe = client.replayPastTransactionsFlowable(DefaultBlockParameterName.fromString(<span class="string">"earliest"</span>)).subscribe(transaction -&gt; &#123;</span><br><span class="line">            System.out.println(transaction);</span><br><span class="line">            <span class="comment">// =&gt; org.web3j.protocol.core.methods.response.EthBlock$TransactionObject@47b0a71a</span></span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Example-2-订阅新的合约事件"><a href="#Example-2-订阅新的合约事件" class="headerlink" title="Example-2: 订阅新的合约事件"></a>Example-2: 订阅新的合约事件</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException, ConnectException </span>&#123;</span><br><span class="line">        WebSocketService webSocketService = <span class="keyword">new</span> WebSocketService(<span class="string">"wss://ropsten.infura.io/ws/v3/You Infura Project Id"</span>, <span class="keyword">true</span>);</span><br><span class="line">        webSocketService.connect();</span><br><span class="line">        Web3j client = Web3j.build(webSocketService);</span><br><span class="line">        Disposable subscribe = client.ethLogFlowable(</span><br><span class="line">                <span class="keyword">new</span> EthFilter(</span><br><span class="line">                        DefaultBlockParameterName.EARLIEST,</span><br><span class="line">                        DefaultBlockParameterName.LATEST,</span><br><span class="line">                        <span class="comment">// 合约地址</span></span><br><span class="line">                        <span class="string">"0x7b52aae43e962ce6a9a1b7e79f549582ae8bcff9"</span></span><br><span class="line">                )</span><br><span class="line">        ).subscribe(event -&gt; &#123;</span><br><span class="line">            System.out.println(event);</span><br><span class="line">            <span class="comment">// =&gt; Log&#123;removed=false, logIndex='0x39', transactionIndex='0x13', transactionHash='0x9c3653c27946cb39c3a256229634cfedbca54f146a740f46b661b986590f8358', blockHash='0x1e674b9d111601519f977b75f9a1865ba359b474550ff5d0d87daec1f543d64d', blockNumber='0xb83ccd', address='0x7b52aae43e962ce6a9a1b7e79f549582ae8bcff9', data='0x', type='null', topics=[0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef, 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000006ab3d0bd875f8667026d2a9bb3060ec44380bcc2, 0x0000000000000000000000000000000000000000000000000000000000000017]&#125;</span></span><br><span class="line">        &#125;, Throwable::printStackTrace);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Web3J-签名并发送交易"><a href="#使用-Web3J-签名并发送交易" class="headerlink" title="使用 Web3J 签名并发送交易"></a>使用 Web3J 签名并发送交易</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException, ConnectException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 获取 nonce 值</span></span><br><span class="line">        EthGetTransactionCount ethGetTransactionCount = client</span><br><span class="line">                .ethGetTransactionCount(<span class="string">"0x64f44b31ad0ed4537f94a5c084cfba8945463345"</span>, DefaultBlockParameterName.PENDING)</span><br><span class="line">                .sendAsync().get();</span><br><span class="line">        BigInteger nonce = ethGetTransactionCount.getTransactionCount();</span><br><span class="line">        System.out.println(nonce);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 构建交易</span></span><br><span class="line">        RawTransaction etherTransaction = RawTransaction.createEtherTransaction(</span><br><span class="line">                nonce,</span><br><span class="line">                client.ethGasPrice().sendAsync().get().getGasPrice(),</span><br><span class="line">                DefaultGasProvider.GAS_LIMIT,</span><br><span class="line">                <span class="string">"0x64f44b31ad0ed4537f94a5c084cfba8945463345"</span>,</span><br><span class="line">                Convert.toWei(<span class="string">"0.001"</span>, Convert.Unit.ETHER).toBigInteger()</span><br><span class="line">        );</span><br><span class="line">        System.out.println(etherTransaction);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 加载私钥</span></span><br><span class="line">        Credentials credentials = Credentials.create(<span class="string">"You Private Key"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 使用私钥签名交易并发送</span></span><br><span class="line">        <span class="keyword">byte</span>[] signature = TransactionEncoder.signMessage(etherTransaction, credentials);</span><br><span class="line">        String signatureHexValue = Numeric.toHexString(signature);</span><br><span class="line">        EthSendTransaction ethSendTransaction = client.ethSendRawTransaction(signatureHexValue).sendAsync().get();</span><br><span class="line">        System.out.println(ethSendTransaction.getResult());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Web3J-生成合约包装类"><a href="#使用-Web3J-生成合约包装类" class="headerlink" title="使用 Web3J 生成合约包装类"></a>使用 Web3J 生成合约包装类</h3><p>Web3J 可以生成智能合约的包装类，方便使用纯 Java 代码与合约进行交互。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> web3j generate solidity -a ./contract.abi -o ./ -p com.contract.proxy</span></span><br><span class="line">              _      _____ _</span><br><span class="line">             | |    |____ (_)</span><br><span class="line">__      _____| |__      / /_</span><br><span class="line">\ \ /\ / / _ \ '_ \     \ \ |</span><br><span class="line"> \ V  V /  __/ |_) |.___/ / |</span><br><span class="line">  \_/\_/ \___|_.__/ \____/| |</span><br><span class="line">                         _/ |</span><br><span class="line">                        |__/</span><br><span class="line">by Web3Labs</span><br><span class="line">Generating com.contract.proxy.Contract ...</span><br><span class="line">Warning: Duplicate field(s) found: [FUNC_SAFETRANSFERFROM]. Please don't use names which will be the same in uppercase.</span><br><span class="line">File written to .</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> tree com</span></span><br><span class="line">com</span><br><span class="line">└── contract</span><br><span class="line">    └── proxy</span><br><span class="line">        └── Contract.java # 包装类</span><br><span class="line"></span><br><span class="line">2 directories, 1 file</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-Web3J-与合约进行交互"><a href="#使用-Web3J-与合约进行交互" class="headerlink" title="使用 Web3J 与合约进行交互"></a>使用 Web3J 与合约进行交互</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        Web3j client = Web3j.build(<span class="keyword">new</span> HttpService(<span class="string">"https://ropsten.infura.io/v3/You Infura Project Id"</span>));</span><br><span class="line">        Credentials credentials = Credentials.create(<span class="string">"You Private Key"</span>);</span><br><span class="line">        BigInteger currentGasPrice = client.ethGasPrice().sendAsync().get().getGasPrice();</span><br><span class="line">        Contract foundersKeyContract = Contract.load(<span class="string">"0x7b52aae43e962ce6a9a1b7e79f549582ae8bcff9"</span>, client, credentials, <span class="keyword">new</span> DefaultGasProvider() &#123;</span><br><span class="line">            <span class="comment">/**</span></span><br><span class="line"><span class="comment">             * 使用动态获取的 Gas Price</span></span><br><span class="line"><span class="comment">             * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> BigInteger <span class="title">getGasPrice</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> currentGasPrice;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        BigInteger balance = foundersKeyContract.balanceOf(<span class="string">"0x64f44b31ad0ed4537f94a5c084cfba8945463345"</span>).send();</span><br><span class="line">        System.out.println(balance);</span><br><span class="line">        <span class="comment">// =&gt; 41493167936</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/WEB3J/" rel="tag"># Web3J</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/12/MYBATIS-PLUS-%E4%B8%AD%E8%87%AA%E5%AE%9A%E4%B9%89-JSON-%E5%AD%97%E6%AE%B5%E8%A7%A3%E6%9E%90/" rel="prev" title="Mybatis Plus 中自定义 JSON 字段解析">
+      <i class="fa fa-chevron-left"></i> Mybatis Plus 中自定义 JSON 字段解析
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#提供的功能"><span class="nav-number">1.</span> <span class="nav-text">提供的功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何使用"><span class="nav-number">2.</span> <span class="nav-text">如何使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Web3J-调用-JSON-RPC"><span class="nav-number">3.</span> <span class="nav-text">使用 Web3J 调用 JSON RPC</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-1-获取以太坊账户余额"><span class="nav-number">3.0.1.</span> <span class="nav-text">Example-1: 获取以太坊账户余额</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-2-获取当前的-Gas-价格"><span class="nav-number">3.0.2.</span> <span class="nav-text">Example-2: 获取当前的 Gas 价格</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-3-通过交易哈希获取交易详情"><span class="nav-number">3.0.3.</span> <span class="nav-text">Example-3: 通过交易哈希获取交易详情</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Web3J-订阅链上的事件"><span class="nav-number">4.</span> <span class="nav-text">使用 Web3J 订阅链上的事件</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-1-订阅新的区块"><span class="nav-number">4.0.1.</span> <span class="nav-text">Example-1: 订阅新的区块</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-2-订阅新的交易"><span class="nav-number">4.0.2.</span> <span class="nav-text">Example-2: 订阅新的交易</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Example-2-订阅新的合约事件"><span class="nav-number">4.0.3.</span> <span class="nav-text">Example-2: 订阅新的合约事件</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Web3J-签名并发送交易"><span class="nav-number">5.</span> <span class="nav-text">使用 Web3J 签名并发送交易</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Web3J-生成合约包装类"><span class="nav-number">6.</span> <span class="nav-text">使用 Web3J 生成合约包装类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Web3J-与合约进行交互"><span class="nav-number">7.</span> <span class="nav-text">使用 Web3J 与合约进行交互</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">39</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <a href="https://beian.miit.gov.cn//" target="_blank" rel="noopener">鄂ICP备19001177号</a>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : 'd28bea13f38ac9c87ec7d6b45846dca7',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -326,11 +326,15 @@ android_chrome_color: "#222"
 custom_logo: #/uploads/custom-logo.jpg
 
 codeblock:
+  # Code Highlight theme
+  # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic
+  # See: https://github.com/chriskempson/tomorrow-theme
   highlight_theme: night # 代码主题
   copy_button:
     enable: true # 是否开启复制功能
     show_result: true # 是否显示复制成功
-    style: mac # 代码块风格
+    # Available values: default | flat | mac
+    style: flat # 代码块风格
 
 back2top:
   enable: true
@@ -412,7 +416,7 @@ font:
   # Font settings for <code> and code blocks.
   codes:
     external: true
-    family: PT Mono
+    family: IBM Plex Mono
 
 # ---------------------------------------------------------------
 # SEO Settings

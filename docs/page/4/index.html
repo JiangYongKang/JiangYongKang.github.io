@@ -12,12 +12,12 @@
 
 <link rel="stylesheet" href="/css/main.css">
 
-<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|IBM Plex Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta property="og:type" content="website">
@@ -162,6 +162,168 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2018/11/18/Spring-Bean-%E8%A3%85%E9%85%8D%E5%92%8C%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/11/18/Spring-Bean-%E8%A3%85%E9%85%8D%E5%92%8C%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5/" class="post-title-link" itemprop="url">Spring Bean 装配和依赖注入</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-11-18 14:41:05" itemprop="dateCreated datePublished" datetime="2018-11-18T14:41:05+08:00">2018-11-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">服务端开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Spring IOC 容器的依赖注入工作可以分为两个阶段。第一个阶段可以认为是构建和收集 Bean 定义的阶段，在这个阶段中，我们可以通过 xml 或者 Java 代码的方式定义一些 Bean，然后通过手动组装或者让容器基于某种规则自动扫描的形式，将这些 Bean 定义收集到 IOC 容器中。下面是以XML配置的形式来注册一些 Bean</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/11/18/Spring-Bean-%E8%A3%85%E9%85%8D%E5%92%8C%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2018/09/22/%E6%B7%B1%E5%85%A5%E5%88%86%E6%9E%90-Session-Cookie/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2018/09/22/%E6%B7%B1%E5%85%A5%E5%88%86%E6%9E%90-Session-Cookie/" class="post-title-link" itemprop="url">深入分析 Session & Cookie</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-09-22 23:04:01" itemprop="dateCreated datePublished" datetime="2018-09-22T23:04:01+08:00">2018-09-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">服务端开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>因为Http协议是无状态的，服务端不知道用户上一次做了什么操作或者请求了什么接口。简单来说就是浏览器发送了两次请求，服务端是无法识别这两次请求是否来自同一个用户。这也是为什么会有 <code>Session</code> 和 <code>Cookie</code> 的原因，它们的作用就是用来维持客户端与服务端的会话。更简单的说，就是让服务端知道每一个请求都是来自于哪个用户。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/09/22/%E6%B7%B1%E5%85%A5%E5%88%86%E6%9E%90-Session-Cookie/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2018/08/28/Spring-Boot-%E4%B8%AD%E4%BD%BF%E7%94%A8-Spring-Security-JWT-%E6%9E%84%E5%BB%BA%E8%BA%AB%E4%BB%BD%E8%AE%A4%E8%AF%81%E7%B3%BB%E7%BB%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -193,7 +355,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -274,7 +436,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -355,7 +517,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -436,7 +598,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -517,7 +679,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -599,7 +761,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -680,7 +842,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-03-12 16:08:43" itemprop="dateModified" datetime="2022-03-12T16:08:43+08:00">2022-03-12</time>
+                <time title="修改时间：2021-07-04 18:36:29" itemprop="dateModified" datetime="2021-07-04T18:36:29+08:00">2021-07-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -798,20 +960,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">37</span>
+          <span class="site-state-item-count">39</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-count">19</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
