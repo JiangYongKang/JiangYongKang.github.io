@@ -94,7 +94,7 @@ creative_commons:
 scheme: Mist
 
 # Dark Mode
-darkmode: false
+darkmode: true
 
 # 导航栏菜单配置
 menu:
@@ -329,7 +329,7 @@ codeblock:
   # Code Highlight theme
   # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic
   # See: https://github.com/chriskempson/tomorrow-theme
-  highlight_theme: night # 代码主题
+  highlight_theme: night eighties # 代码主题
   copy_button:
     enable: true # 是否开启复制功能
     show_result: true # 是否显示复制成功

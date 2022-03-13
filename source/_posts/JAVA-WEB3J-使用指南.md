@@ -40,9 +40,7 @@ public class Main {
 }
 ```
 
-### 使用 Web3J 调用 JSON RPC
-
-##### Example-1: 获取以太坊账户余额
+### 使用 Web3J 获取以太坊账户余额
 
 ```Java
 public class Main {
@@ -58,7 +56,7 @@ public class Main {
 }
 ```
 
-##### Example-2: 获取当前的 Gas 价格
+### 使用 Web3J 获取当前的 Gas 价格
 
 ```Java
 public class Main {
@@ -71,7 +69,7 @@ public class Main {
 }
 ```
 
-##### Example-3: 通过交易哈希获取交易详情
+### 使用 Web3J 通过交易哈希获取交易详情
 
 ```Java
 public class Main {
@@ -86,11 +84,9 @@ public class Main {
 }
 ```
 
-### 使用 Web3J 订阅链上的事件
+### 使用 Web3J 订阅新的区块
 
 **Web3J** 的函数式编程的特性让我们设置观察者很容易，我们可以设置订阅者，监听链上发生的一些事情，如出块，交易，日志等。
-
-##### Example-1: 订阅新的区块
 
 ```Java
 public class Main {
@@ -106,7 +102,7 @@ public class Main {
 }
 ```
 
-##### Example-2: 订阅新的交易
+### 使用 Web3J 订阅新的交易
 
 ```Java
 public class Main {
@@ -122,7 +118,7 @@ public class Main {
 }
 ```
 
-##### Example-2: 订阅新的合约事件
+### 使用 Web3J 订阅新的合约事件
 
 ```Java
 public class Main {
