@@ -59,7 +59,7 @@ tag_map:                        # 标签别名
 # 时间和日期的相关配置
 date_format: YYYY-MM-DD # 日期格式化
 time_format: HH:mm:ss   # 时间格式化
-use_date_for_updated: false
+updated_option: false
 
 # 分页相关配置
 per_page: 10         # 每页显示的文章数量 0 相当于关闭分页

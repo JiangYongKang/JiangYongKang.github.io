@@ -10,12 +10,10 @@
   </div>
 {%- endif %}
 
-
 <div class="copyright">
   {% set copyright_year = date(null, 'YYYY') %}
   &copy; {% if theme.footer.since and theme.footer.since != copyright_year %}{{ theme.footer.since }} – {% endif %}
   <span itemprop="copyrightYear">{{ copyright_year }}</span>
-  <a href="https://beian.miit.gov.cn//">鄂ICP备19001177号</a>
   <span class="with-love">
     <i class="{{ theme.footer.icon.name }}"></i>
   </span>

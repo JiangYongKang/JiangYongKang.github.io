@@ -94,7 +94,7 @@ creative_commons:
 scheme: Mist
 
 # Dark Mode
-darkmode: true
+darkmode: false
 
 # 导航栏菜单配置
 menu:
@@ -329,12 +329,12 @@ codeblock:
   # Code Highlight theme
   # Available values: normal | night | night eighties | night blue | night bright | solarized | solarized dark | galactic
   # See: https://github.com/chriskempson/tomorrow-theme
-  highlight_theme: night eighties # 代码主题
+  highlight_theme: night # 代码主题
   copy_button:
     enable: true # 是否开启复制功能
     show_result: true # 是否显示复制成功
     # Available values: default | flat | mac
-    style: flat # 代码块风格
+    style: mac # 代码块风格
 
 back2top:
   enable: true
@@ -393,8 +393,8 @@ font:
   # Global font settings used for all elements inside <body>.
   global:
     external: true
-    family: Lato
-    size: 0.85
+    family: LXGWWenKai-Regular
+    size: 0.8
 
   # Font settings for site title (.site-title).
   title:
