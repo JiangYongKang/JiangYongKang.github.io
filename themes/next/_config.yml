@@ -393,7 +393,7 @@ font:
   # Global font settings used for all elements inside <body>.
   global:
     external: true
-    family: LXGWWenKai-Regular
+    family: LXGW WenKai
     size: 0.8
 
   # Font settings for site title (.site-title).
