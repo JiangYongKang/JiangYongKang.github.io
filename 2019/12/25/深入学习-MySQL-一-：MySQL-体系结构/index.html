@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最初在使用 MySQL 数据库时，仅仅停留在增删改查的层次。缺乏对于数据库整体的认知。随着工作中接触到的需求越来越复杂，渐渐的认识到需要再次深入的去学习一下 MySQL。最近这几个月看了一些数据库相关的书籍，整理出了下面一些知识点。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入学习 MySQL (一)：MySQL 体系结构">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2019/12/25/%E6%B7%B1%E5%85%A5%E5%AD%A6%E4%B9%A0-MySQL-%E4%B8%80-%EF%BC%9AMySQL-%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="最初在使用 MySQL 数据库时，仅仅停留在增删改查的层次。缺乏对于数据库整体的认知。随着工作中接触到的需求越来越复杂，渐渐的认识到需要再次深入的去学习一下 MySQL。最近这几个月看了一些数据库相关的书籍，整理出了下面一些知识点。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-12-25T09:51:24.000Z">
+<meta property="article:modified_time" content="2023-03-13T14:19:21.063Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2019/12/25/%E6%B7%B1%E5%85%A5%E5%AD%A6%E4%B9%A0-MySQL-%E4%B8%80-%EF%BC%9AMySQL-%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>深入学习 MySQL (一)：MySQL 体系结构 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2019/12/25/%E6%B7%B1%E5%85%A5%E5%AD%A6%E4%B9%A0-MySQL-%E4%B8%80-%EF%BC%9AMySQL-%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入学习 MySQL (一)：MySQL 体系结构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-25 17:51:24" itemprop="dateCreated datePublished" datetime="2019-12-25T17:51:24+08:00">2019-12-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-13 22:19:21" itemprop="dateModified" datetime="2023-03-13T22:19:21+08:00">2023-03-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最初在使用 <code>MySQL</code> 数据库时，仅仅停留在增删改查的层次。缺乏对于数据库整体的认知。随着工作中接触到的需求越来越复杂，渐渐的认识到需要再次深入的去学习一下 <code>MySQL</code>。最近这几个月看了一些数据库相关的书籍，整理出了下面一些知识点。</p>
+<span id="more"></span>
+
+<h2 id="数据库范式"><a href="#数据库范式" class="headerlink" title="数据库范式"></a>数据库范式</h2><p>数据库范式是为解决关系数据库中数据冗余、更新异常、插入异常、删除异常问题而引入的。简单的理解，数据库范式可以避免数据冗余，减少数据库的空间，并且减轻维护数据完整性的麻烦。</p>
+<ul>
+<li>第一范式，强调属性的原子性约束，要求属性具有原子性，不可再分解。</li>
+<li>第二范式，强调记录的唯一性约束，表必须有一个主键，并且没有包含在主键中的列必须完全依赖于主键，而不能只依赖于主键的一部分。</li>
+<li>第三范式，强调属性冗余性的约束，即非主键列必须直接依赖于主键。</li>
+</ul>
+<h2 id="数据库的定义"><a href="#数据库的定义" class="headerlink" title="数据库的定义"></a>数据库的定义</h2><p>在数据库体系中，<strong>数据库</strong> 与 <strong>实例</strong> 是两个不同的概念。很多开发人员对两者的区别不是很清楚。</p>
+<ul>
+<li>数据库：物理操作系统文件或其他形式文件类型的集合</li>
+<li>实例：MySQL 数据库后台线程以及一个共享的内存区域</li>
+</ul>
+<p>一般来说，一个数据库会对应一个实例。但是在集群 RAC 共享数据文件时，一个数据库会对应多个实例。数据库是由一个个数据文件组成的，当我们需要进行 <code>CRUD</code> 等操作时，是不能通过粗暴的文件修改来完成的，需要通过数据库实例来完成对数据库的操作。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看数据文件</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">ls</span> -al /usr/local/var/mysql</span></span><br><span class="line">drwxr-xr-x   39 vincent  admin      1248 12 21 12:24 .</span><br><span class="line">drwxrwxr-x    7 vincent  admin       224  6 17  2019 ..</span><br><span class="line">drwxr-x---   19 vincent  admin       608  9 29 17:29 classicmodels</span><br><span class="line">drwxr-x---   77 vincent  admin      2464  6 17  2019 mysql</span><br><span class="line">drwxr-x---  108 vincent  admin      3456  6 17  2019 sys</span><br><span class="line">drwxr-x---    5 vincent  admin       160 12 20 18:32 test</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">查看数据库实例</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">ps -ef | grep mysqld</span></span><br><span class="line">  501   374     1   0 12:24下午 ??         0:00.03 /bin/sh /usr/local/opt/mysql@5.7/bin/mysqld_safe --datadir=/usr/local/var/mysql</span><br><span class="line">  501   474   374   0 12:24下午 ??         0:05.73 /usr/local/opt/mysql@5.7/bin/mysqld --basedir=/usr/local/opt/mysql@5.7 --datadir=/usr/local/var/mysql --plugin-dir=/usr/local/opt/mysql@5.7/lib/plugin --log-error=vincentdeMacBook-Pro.local.err --pid-file=vincentdeMacBook-Pro.local.pid</span><br></pre></td></tr></table></figure>
+
+<h2 id="插件式存储引擎"><a href="#插件式存储引擎" class="headerlink" title="插件式存储引擎"></a>插件式存储引擎</h2><p><code>MySQL</code> 数据库区别与其他数据库的一个重要特点就是它的插件式表 <code>存储引擎</code>。存储引擎是基于表的，而不是数据库。这就意味着，可以在同一数据库的不同表中设置不同的存储引擎。这样做的好处是，每个存储引擎都有各自不同的特点，开发人员可以根据不同的业务逻辑建立不同的存储引擎表。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># 查看当前数据库对存储引擎的支持情况</span><br><span class="line">mysql&gt; show engines;</span><br><span class="line">+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+</span><br><span class="line">| Engine             | Support | Comment                                                        | Transactions | XA   | Savepoints |</span><br><span class="line">+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+</span><br><span class="line">| InnoDB             | DEFAULT | Supports transactions, row-level locking, and foreign keys     | YES          | YES  | YES        |</span><br><span class="line">| MRG_MYISAM         | YES     | Collection of identical MyISAM tables                          | NO           | NO   | NO         |</span><br><span class="line">| MEMORY             | YES     | Hash based, stored in memory, useful for temporary tables      | NO           | NO   | NO         |</span><br><span class="line">| BLACKHOLE          | YES     | /dev/null storage engine (anything you write to it disappears) | NO           | NO   | NO         |</span><br><span class="line">| MyISAM             | YES     | MyISAM storage engine                                          | NO           | NO   | NO         |</span><br><span class="line">| CSV                | YES     | CSV storage engine                                             | NO           | NO   | NO         |</span><br><span class="line">| ARCHIVE            | YES     | Archive storage engine                                         | NO           | NO   | NO         |</span><br><span class="line">| PERFORMANCE_SCHEMA | YES     | Performance Schema                                             | NO           | NO   | NO         |</span><br><span class="line">| FEDERATED          | NO      | Federated MySQL storage engine                                 | NULL         | NULL | NULL       |</span><br><span class="line">+--------------------+---------+----------------------------------------------------------------+--------------+------+------------+</span><br><span class="line">9 rows in set (0.01 sec)</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>MySQL 5.5.8</code> 版本之前，默认的存储引擎是 <code>MyISAM</code>，<code>MyISAM</code> 存储引擎不支持事务，表锁设计，支持全文索引。<br>在 <code>MySQL 5.5.8</code> 版本之后，默认的存储引擎是 <code>InnoDB</code>，<code>InnoDB</code> 支持事务，行锁设计。两种存储引擎的区别在后续的文章会详细介绍。</p>
+<h2 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h2><p>MySQL 的文件大致可以分为这几类：<code>参数文件</code> <code>日志文件</code> <code>Socket 文件</code> <code>PID 文件</code> <code>表结构文件</code> <code>数据文件</code>。</p>
+<ul>
+<li><code>参数文件</code> 会在 MySQL 启动时被加载读取。文件中会定义数据文件的位置、各种内存大小的设置等。</li>
+<li><code>日志文件</code> 记录了 MySQL 运行时的一些状态。有错误日志、慢查询日志、二进制日志等。</li>
+<li><code>套接字文件</code> 当用 UNIX 套接字方式进行连接时锁需要的文件。</li>
+<li><code>PID 文件</code> MySQL 实例进程 ID 文件</li>
+<li><code>表结构文件</code> 用来存放 MySQL 表结构定义的文件</li>
+<li><code>数据文件</code> 存储记录和索引数据。因为 MySQL 插件式存储引擎的原因，每个存储引擎都有自己的文件系统来存储记录和索引数据。所以每个存储引擎记录的数据文件格式并不一样。</li>
+</ul>
+<h2 id="启动与连接"><a href="#启动与连接" class="headerlink" title="启动与连接"></a>启动与连接</h2><p>MySQL 有四种启动方式，分别是 <code>mysqld</code> <code>mysqld_safe</code> <code>mysql.server</code> <code>mysqld_multi</code>。</p>
+<ul>
+<li><code>mysqld</code> 是最常见的启动方式，启动后仅有一个 <code>mysqld</code> 进程。</li>
+<li><code>mysqld_safe</code> 通过调用 <code>mysqld</code> 的方式启动实例，启动后会有两个进程，分别是 <code>mysqld</code> <code>mysqld_safe</code> 当实例出现错误时会自动重启。</li>
+<li><code>mysql.server</code> 通过调用 <code>mysqld_safe</code> 的方式来启动实例</li>
+<li><code>mysqld_multi</code> 多实例启动工具，用来管理多个 <code>mysqld</code> 进程，可以配置不同的实例参数</li>
+</ul>
+<h2 id="结构化查询语言"><a href="#结构化查询语言" class="headerlink" title="结构化查询语言"></a>结构化查询语言</h2><p>结构化查询语言，也就是我们通常所说的 <code>SQL</code> 语句。<code>SQL</code> 语句主要分为以下三个类别：</p>
+<ul>
+<li>DDL(Data Definition Languages) 数据定义语句，用于定义数据库、表、字段、索引、视图、触发器等。常用关键字为 <code>CREATE</code> <code>DROP</code> <code>ALTER</code> 等。</li>
+<li>DML(Data Manipulation Languages) 数据操纵语句，用于增删改查数据库记录，常用关键字为 <code>INSERT</code> <code>UPDATE</code> <code>SELECT</code> <code>DELETE</code> 等。</li>
+<li>DCL(Data Control Languages) 数据控制语句，用于控制用户对数据库、表、字段的访问权限和安全级别。常用关键字为 <code>GRANT</code> <code>REVOKE</code> 等。</li>
+</ul>
+<h2 id="参考连接"><a href="#参考连接" class="headerlink" title="参考连接"></a>参考连接</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://book.douban.com/subject/23008813/" title="高性能 MySQL">高性能 MySQL</a></li>
+<li><a target="_blank" rel="noopener" href="https://book.douban.com/subject/24708143/" title="MySQL 技术内幕：InnoDB 存储引擎">MySQL 技术内幕：InnoDB 存储引擎</a></li>
+<li><a target="_blank" rel="noopener" href="https://book.douban.com/subject/26419771/" title="数据库索引设计与优化">数据库索引设计与优化</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.mysqlzh.com/" title="MySQL 中文文档">MySQL 中文文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/8.0/en/" title="MySQL 英文文档">MySQL 英文文档</a></li>
+<li><a target="_blank" rel="noopener" href="http://wingyumin.com/2015/09/29/mysqld-multi%E5%A4%9A%E5%AE%9E%E4%BE%8B%E5%90%AF%E5%8A%A8%E5%B7%A5%E5%85%B7/" title="mysqld_multi 多实例启动工具">mysqld_multi 多实例启动工具</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MYSQL/" rel="tag"># MySQL</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/12/14/%E9%AB%98%E6%80%A7%E8%83%BD%E9%98%9F%E5%88%97-Disruptor-%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B/" rel="prev" title="高性能队列 Disruptor 使用教程">
+      <i class="fa fa-chevron-left"></i> 高性能队列 Disruptor 使用教程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/12/25/%E6%B7%B1%E5%85%A5%E5%AD%A6%E4%B9%A0-MySQL-%E4%BA%8C-%EF%BC%9AMySQL-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="next" title="深入学习 MySQL (二)：MySQL 文件系统">
+      深入学习 MySQL (二)：MySQL 文件系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">数据库范式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">2.</span> <span class="nav-text">数据库的定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6%E5%BC%8F%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E"><span class="nav-number">3.</span> <span class="nav-text">插件式存储引擎</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">4.</span> <span class="nav-text">文件系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E4%B8%8E%E8%BF%9E%E6%8E%A5"><span class="nav-number">5.</span> <span class="nav-text">启动与连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E6%9F%A5%E8%AF%A2%E8%AF%AD%E8%A8%80"><span class="nav-number">6.</span> <span class="nav-text">结构化查询语言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%BF%9E%E6%8E%A5"><span class="nav-number">7.</span> <span class="nav-text">参考连接</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : 'e77debf1bda76d50e4f1d01c91225c5c',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

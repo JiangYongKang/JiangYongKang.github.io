@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.png">
+  <link rel="mask-icon" href="/images/favicon.png" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.jiangyongkang.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"hide","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="但愿你没有在数据库里直接存储明文密码！为了防治密码被窃取，数据库中存储的始终应该是某种形式的哈希值，而非明文密码。但是，Rails 3.1 之后可以利用 has_secure_password 来实现。这个 Rails 内部的机制充分考虑了密码验证和加密。它需要 model 中有一个 password_digest 字段，用来存储加密后的密码。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rails 中使用安全密码">
+<meta property="og:url" content="https://blog.jiangyongkang.com/2018/07/14/Rails-%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%AE%89%E5%85%A8%E5%AF%86%E7%A0%81/index.html">
+<meta property="og:site_name" content="姜咏康的博客">
+<meta property="og:description" content="但愿你没有在数据库里直接存储明文密码！为了防治密码被窃取，数据库中存储的始终应该是某种形式的哈希值，而非明文密码。但是，Rails 3.1 之后可以利用 has_secure_password 来实现。这个 Rails 内部的机制充分考虑了密码验证和加密。它需要 model 中有一个 password_digest 字段，用来存储加密后的密码。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-07-14T02:28:56.000Z">
+<meta property="article:modified_time" content="2023-03-13T14:19:21.002Z">
+<meta property="article:author" content="JiangYongKang">
+<meta property="article:tag" content="Rails">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.jiangyongkang.com/2018/07/14/Rails-%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%AE%89%E5%85%A8%E5%AF%86%E7%A0%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Rails 中使用安全密码 | 姜咏康的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">姜咏康的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/JiangYongKang" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.jiangyongkang.com/2018/07/14/Rails-%E4%B8%AD%E4%BD%BF%E7%94%A8%E5%AE%89%E5%85%A8%E5%AF%86%E7%A0%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+      <meta itemprop="name" content="JiangYongKang">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="姜咏康的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Rails 中使用安全密码
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2018-07-14 10:28:56" itemprop="dateCreated datePublished" datetime="2018-07-14T10:28:56+08:00">2018-07-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-13 22:19:21" itemprop="dateModified" datetime="2023-03-13T22:19:21+08:00">2023-03-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/RUBY/" itemprop="url" rel="index"><span itemprop="name">Ruby</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>但愿你没有在数据库里直接存储明文密码！为了防治密码被窃取，数据库中存储的始终应该是某种形式的哈希值，而非明文密码。但是，<code>Rails 3.1</code> 之后可以利用 <code>has_secure_password</code> 来实现。这个 <code>Rails</code> 内部的机制充分考虑了密码验证和加密。它需要 <code>model</code> 中有一个 <code>password_digest</code> 字段，用来存储加密后的密码。</p>
+<span id="more"></span>
+
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$ </span>rails g model user <span class="symbol">email:</span>string <span class="symbol">password_digest:</span>string</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span> &lt; <span class="title class_ inherited__">ApplicationRecord</span></span><br><span class="line">  has_secure_password</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+<p><code>has_secure_password</code> 这会为 <code>model</code> 加上 <code>password</code> 和 <code>password_confirmation</code> 两个属性。这两个属性是 <code>model</code> 的一部分，但是并不存在于数据库中，因为我们并不需要存储明文密码。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">test <span class="string">&#x27;fails because no password&#x27;</span> <span class="keyword">do</span></span><br><span class="line">  user = <span class="title class_">User</span>.new(<span class="symbol">email:</span> <span class="string">&#x27;vincent@email.com&#x27;</span>)</span><br><span class="line">  assert_not user.save</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">test <span class="string">&#x27;fails because passwrod to short&#x27;</span> <span class="keyword">do</span></span><br><span class="line">  user = <span class="title class_">User</span>.new(<span class="symbol">email:</span> <span class="string">&#x27;vincent@email.com&#x27;</span>, <span class="symbol">password:</span> <span class="string">&#x27;123&#x27;</span>)</span><br><span class="line">  assert_not user.save</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">test <span class="string">&#x27;succeeds because password is long enough&#x27;</span> <span class="keyword">do</span></span><br><span class="line">  user = <span class="title class_">User</span>.new(<span class="symbol">email:</span> <span class="string">&#x27;vincent@email.com&#x27;</span>, <span class="symbol">password:</span> <span class="string">&#x27;123456&#x27;</span>)</span><br><span class="line">  assert user.save</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>不提供密码，用户创建失败</li>
+<li>密码过短，用户创建失败</li>
+<li>密码合法，用户创建成功</li>
+</ul>
+<p>用 <code>rails test</code> 跑这些用例时，第二个用例会失败。因为默认 <code>Rails</code> 不会加入密码长度的验证。现在我们在 <code>model</code> 中自己加上。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span> &lt; <span class="title class_ inherited__">ApplicationRecord</span></span><br><span class="line">  has_secure_password</span><br><span class="line">  validates <span class="symbol">:password</span>, <span class="symbol">length:</span> &#123; <span class="symbol">minimum:</span> <span class="number">6</span> &#125;</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>再跑一次测试，这次用例都通过了。检查一下数据库会发现 <code>users</code> 表的 <code>password_digest</code> 列存储着经过加密的数值，这正是我们想要的！现在来做验证的部分。假设一个新的注册用户现在想要登录。你可以这样进行验证：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">User.find_by(<span class="symbol">email:</span> <span class="string">&quot;EMAIL&quot;</span>).authenticate(<span class="string">&quot;CLEAR_TEXT_PASSWORD&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>如果从 <code>HTTP</code> 请求中传来的用户名和明文密码都正确，将从数据库中返回一个有效用户。否则返回 <code>nil</code> <code>has_secure_password</code> 只在对象创建时对密码进行验证。之后的操作便不再验证（例如 <code>update</code> ）。这个可以接受，因为这意味着你可以从数据库加载用户，在不知道密码的情况下修改和保存用户。<code>has_secure_password</code> 还为 <code>model</code> 提供了 <code>password_confirmation</code> 属性。只有当该属性为非 <code>nil</code> 值时才触发验证。如果该属性非 <code>nil</code>，则其值必须与 <code>password</code> 属性相等。让我们针对该属性再加两个测试用例。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">test <span class="string">&quot;fails because password confirmation doesnt match&quot;</span> <span class="keyword">do</span></span><br><span class="line">  user = <span class="title class_">User</span>.new(<span class="symbol">email:</span> <span class="string">&#x27;vincent@email.com&#x27;</span>, <span class="symbol">password:</span> <span class="string">&#x27;123456&#x27;</span>, <span class="symbol">password_confirmation:</span> <span class="string">&#x27;654321&#x27;</span>)</span><br><span class="line">  assert_not user.save</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">test <span class="string">&quot;succeeds because password &amp; confirmation match&quot;</span> <span class="keyword">do</span></span><br><span class="line">  user = <span class="title class_">User</span>.new(<span class="symbol">email:</span> <span class="string">&#x27;vincent@email.com&#x27;</span>, <span class="symbol">password:</span> <span class="string">&#x27;123456&#x27;</span>, <span class="symbol">password_confirmation:</span> <span class="string">&#x27;123456&#x27;</span>)</span><br><span class="line">  assert user.save</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+<p>为了让测试通过，在 <code>model</code> 中再加入一行代码。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">User</span> &lt; <span class="title class_ inherited__">ApplicationRecord</span></span><br><span class="line">  has_secure_password</span><br><span class="line">  validates <span class="symbol">:password</span>, <span class="symbol">length:</span> &#123; <span class="symbol">minimum:</span> <span class="number">6</span> &#125;</span><br><span class="line">  validates_confirmation_of <span class="symbol">:password</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+<p><code>validates_confirmation_of :password</code> 将会检查密码的一致性。<code>Rails</code> 不强制使用 <code>password_confirmation</code>，但是你需要的话可以像这么来用。我确实很喜欢这个功能，因为它节省了很多代码和开发时间。而且对大部分应用来说够用了。<code>has_secure_password</code> 会自动加入以下验证规则：</p>
+<ul>
+<li>在创建时密码必须存在</li>
+<li>密码长度小于等于72字符</li>
+<li>确认密码，使用 password_confirmation 属性</li>
+</ul>
+<p>在实际项目中，通过第三方应用登录的用户是不需要密码的，这时可以通过传递 <code>validations: false</code> 参数移除验证规则。</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">has_secure_password <span class="symbol">validations:</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+
+<p>模块验证规则查看</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">User.validators</span><br></pre></td></tr></table></figure>
+
+<p>模块中某属性验证规则查看</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">User.validators_on(<span class="symbol">:password</span>)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RAILS/" rel="tag"># Rails</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/01/16/%E6%9C%AC%E5%9C%B0%E7%BA%BF%E7%A8%8B%E5%8F%98%E9%87%8F-ThreadLocal/" rel="prev" title="本地线程变量 ThreadLocal">
+      <i class="fa fa-chevron-left"></i> 本地线程变量 ThreadLocal
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/28/Spring-Boot-%E4%B8%AD%E4%BD%BF%E7%94%A8-Spring-Security-JWT-%E6%9E%84%E5%BB%BA%E8%BA%AB%E4%BB%BD%E8%AE%A4%E8%AF%81%E7%B3%BB%E7%BB%9F/" rel="next" title="Spring Boot 中使用 Spring Security + JWT 构建身份认证系统">
+      Spring Boot 中使用 Spring Security + JWT 构建身份认证系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="JiangYongKang"
+      src="http://cdn.jiangyongkang.com/bd000f163f5b377b90f74fceb2074097.jpg">
+  <p class="site-author-name" itemprop="name">JiangYongKang</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">JiangYongKang</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd0a9bc6b3c1b096bf5ef',
+      clientSecret: '3c3e81ba47906ad48634a6af4a19a591ac5e5740',
+      repo        : 'JiangYongKang.github.io',
+      owner       : 'JiangYongKang',
+      admin       : ['JiangYongKang'],
+      id          : '7eb2b313488339e58cfdf6d4434cfced',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
