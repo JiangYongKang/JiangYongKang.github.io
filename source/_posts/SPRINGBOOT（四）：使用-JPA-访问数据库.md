@@ -1,5 +1,5 @@
 ---
-title: SpringBoot（三）：使用 JPA 访问数据库
+title: SpringBoot（四）：使用 JPA 访问数据库
 date: 2020-11-13 15:44:53
 tags: SpringBoot
 categories: SpringBoot 系列
